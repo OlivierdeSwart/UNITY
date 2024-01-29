@@ -38,6 +38,12 @@ function App() {
     // Fetch Chain ID
     const { chainId } = await provider.getNetwork()
 
+    console.log('test')
+    console.log(provider)
+    console.log(chainId)
+    // console.log([config[chainId].token.address])
+    // console.log([provider])
+
     //initiate contracts
     const token = new ethers.Contract(config[chainId].token.address,TOKEN_ABI,provider)
     const crowdsale = new ethers.Contract(config[chainId].crowdsale.address,CROWDSALE_ABI,provider)
