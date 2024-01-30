@@ -14,11 +14,16 @@ contract Crowdsale {
 	uint256 public buyMinTokens = 10 * (10**18);
 	uint256 public buyMaxTokens = 1000 * (10**18);
 
+	struct Participant {
+    	uint256 etherAmount;
+    	uint256 tokenAmount;
+	}
 
 	event Buy(uint256 amount, address buyer);
 	event Finalize(uint256 tokensSold, uint256 value);
 
 	mapping(address => bool) public whitelist;
+	mapping(address => Participant) public contributions;
 
 	constructor(
 		Token _token,
@@ -47,16 +52,22 @@ contract Crowdsale {
 	}
 
 	receive() external payable {
-		uint256 amount = msg.value / price;
-		buyTokens(amount * 1e18);
+		uint256 _amount = msg.value / price * 1e18;
+		// buyTokens(amount * 1e18);
+
+		contributions[msg.sender].etherAmount += msg.value;
+    	contributions[msg.sender].tokenAmount += _amount;
 	}
 
 	function buyTokens(uint256 _amount) public payable onlyWhitelisted afterStart {
 		require(msg.value == (_amount / 1e18) * price);
 		require(token.balanceOf(address(this)) >= _amount);
-		require(token.transfer(msg.sender, _amount));
 		require(_amount >= buyMinTokens, "Purchase amount too low");
 		require(_amount <= buyMaxTokens, "Purchase amount too high");
+		// require(token.transfer(msg.sender, _amount));
+
+		contributions[msg.sender].etherAmount += msg.value;
+    	contributions[msg.sender].tokenAmount += _amount;
 
 		tokensSold += _amount;
 
