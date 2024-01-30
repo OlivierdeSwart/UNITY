@@ -17,7 +17,7 @@ describe('Crowdsale', () => {
       const Token = await ethers.getContractFactory('Token')
 
       // Deploy token
-      token = await Token.deploy('Dapp University','DAPP','1000000')
+      token = await Token.deploy('Dapp University','DAPP','1000000') //NAME, SYMBOL, TOTAL_SUPPLY
 
       // Configure Accounts
       accounts = await ethers.getSigners()
@@ -25,7 +25,7 @@ describe('Crowdsale', () => {
       user1 = accounts[1]
 
       // Deploy Crowdsale
-      crowdsale = await Crowdsale.deploy(token.address, ether(1), '1000000')
+      crowdsale = await Crowdsale.deploy(token.address, ether(1), '1000000') //TOKEN, PRICE, MAX_SUPPLY
 
       // Send tokens to crowdsale
       let transaction = await token.connect(deployer).transfer(crowdsale.address, tokens(1000000))
@@ -52,6 +52,7 @@ describe('Crowdsale', () => {
 
     describe('Success', () => {
       beforeEach(async () => {
+        transaction = await crowdsale.connect(deployer).addToWhitelist(user1.address)
         transaction = await crowdsale.connect(user1).buyTokens(amount, { value: ether(10) })
         result = await transaction.wait()
       })
@@ -90,6 +91,7 @@ describe('Crowdsale', () => {
     describe('Success', () => {
 
       beforeEach(async () => {
+        transaction = await crowdsale.connect(deployer).addToWhitelist(user1.address)
         transaction = await user1.sendTransaction({ to: crowdsale.address, value: amount })
         result = await transaction.wait()
       })
@@ -139,6 +141,7 @@ describe('Crowdsale', () => {
 
     describe('Success', () => {
       beforeEach(async () => {
+        transaction = await crowdsale.connect(deployer).addToWhitelist(user1.address)
         transaction = await crowdsale.connect(user1).buyTokens(amount, { value: value})
         result = await transaction.wait()
 
@@ -165,6 +168,34 @@ describe('Crowdsale', () => {
 
        it('prevents non-owner from finalizing', async () => {
         await expect(crowdsale.connect(user1).finalize()).to.be.reverted
+      })
+    })
+  })
+
+  describe('Whitelist Functions', () => {
+    let transaction, result
+    let amount = tokens(10)
+    let value = ether(10)
+
+    describe('Failure', () => {
+
+       it('prevents non-whitelisted address from buying tokens', async () => {
+        await expect(crowdsale.connect(user1).buyTokens(amount, { value: value})).to.be.reverted
+      })
+    })
+  })
+
+  describe('ICO Start Time', () => {
+    let transaction, result
+    let amount = tokens(10)
+    let value = ether(10)
+
+    describe('Failure', () => {
+
+       it('prevents buying tokens before start time', async () => {
+        transaction = await crowdsale.connect(deployer).addToWhitelist(user1.address)
+        transaction = await crowdsale.connect(deployer).changeIcoStart(2706599640)
+        await expect(crowdsale.connect(user1).buyTokens(amount, { value: value})).to.be.reverted
       })
     })
   })

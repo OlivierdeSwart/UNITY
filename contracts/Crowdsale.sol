@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./Token.sol";
+import "hardhat/console.sol";
 
 contract Crowdsale {
 	address public owner;
@@ -9,13 +10,16 @@ contract Crowdsale {
 	uint256 public price;
 	uint256 public maxTokens;
 	uint256 public tokensSold;
+	uint256 public ico_start = block.timestamp - 3600;
+	uint256 public buyMinTokens = 10 * (10**18);
+	uint256 public buyMaxTokens = 1000 * (10**18);
+
 
 	event Buy(uint256 amount, address buyer);
 	event Finalize(uint256 tokensSold, uint256 value);
 
+	mapping(address => bool) public whitelist;
 
-	// Need Code
-	// Need Address
 	constructor(
 		Token _token,
 		uint256 _price,
@@ -32,15 +36,27 @@ contract Crowdsale {
 		_;
 	}
 
+	modifier onlyWhitelisted() {
+    	require(whitelist[msg.sender], "Not whitelisted");
+    	_;
+	}
+
+	modifier afterStart() {
+    	require(ico_start < block.timestamp, "Too early, ICO didn't start yet");
+    	_;
+	}
+
 	receive() external payable {
 		uint256 amount = msg.value / price;
 		buyTokens(amount * 1e18);
 	}
 
-	function buyTokens(uint256 _amount) public payable {
+	function buyTokens(uint256 _amount) public payable onlyWhitelisted afterStart {
 		require(msg.value == (_amount / 1e18) * price);
 		require(token.balanceOf(address(this)) >= _amount);
 		require(token.transfer(msg.sender, _amount));
+		require(_amount >= buyMinTokens, "Purchase amount too low");
+		require(_amount <= buyMaxTokens, "Purchase amount too high");
 
 		tokensSold += _amount;
 
@@ -61,5 +77,18 @@ contract Crowdsale {
 
 		emit Finalize(tokensSold, value);
 	}
+
+	function addToWhitelist(address _address) public onlyOwner {
+    	whitelist[_address] = true;
+	}
+
+	function removeFromWhitelist(address _address) public onlyOwner {
+    	whitelist[_address] = false;
+	}
+
+	function changeIcoStart(uint256 _time) public onlyOwner {
+    	ico_start = _time;
+	}
+
 
 }
