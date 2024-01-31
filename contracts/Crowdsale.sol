@@ -11,6 +11,8 @@ contract Crowdsale {
 	uint256 public maxTokens;
 	uint256 public tokensSold;
 	uint256 public ico_start = block.timestamp - 3600;
+	uint256 public ico_end = block.timestamp + 3600;
+	bool public ico_finalized = false;
 	uint256 public buyMinTokens = 10 * (10**18);
 	uint256 public buyMaxTokens = 1000 * (10**18);
 
@@ -19,7 +21,8 @@ contract Crowdsale {
     	uint256 tokenAmount;
 	}
 
-	event Buy(uint256 amount, address buyer);
+	event Buy(address buyer, uint256 amount_tokens, uint256 amount_eth);
+	// event Buy(uint256 amount, address buyer);
 	event Finalize(uint256 tokensSold, uint256 value);
 
 	mapping(address => bool) public whitelist;
@@ -51,6 +54,11 @@ contract Crowdsale {
     	_;
 	}
 
+	modifier afterEnd() {
+    	require(ico_end < block.timestamp, "Too early, ICO didn't end yet");
+    	_;
+	}
+
 	receive() external payable {
 		uint256 _amount = msg.value / price * 1e18;
 		// buyTokens(amount * 1e18);
@@ -71,22 +79,26 @@ contract Crowdsale {
 
 		tokensSold += _amount;
 
-		emit Buy(_amount, msg.sender);
+		emit Buy(msg.sender, _amount, msg.value);
+		// emit Buy(_amount, msg.sender);
 	}
 
 	function setPrice(uint256 _price) public onlyOwner {
 		price = _price;
 	}
 
-	function finalize() public onlyOwner {
-		require(token.transfer(owner, token.balanceOf(address(this))));
+	function finalize() public {
+		require(ico_finalized = false, "ICO already finalized, can't happen twice")
+		ico_finalized = true
+		// // Send all tokens to crowdsale creator
+		// require(token.transfer(owner, token.balanceOf(address(this))));
 
-		// Send Ether to crowdsale creator
-		uint256 value = address(this).balance;
-		(bool sent, ) = owner.call{value: value }("");
-		require(sent);
+		// // Send Ether to crowdsale creator
+		// uint256 value = address(this).balance;
+		// (bool sent, ) = owner.call{value: value }("");
+		// require(sent);
 
-		emit Finalize(tokensSold, value);
+		// emit Finalize(tokensSold, value);
 	}
 
 	function addToWhitelist(address _address) public onlyOwner {

@@ -91,10 +91,16 @@ describe('Crowdsale', () => {
         expect(await crowdsale.tokensSold()).to.equal(amount)
       })
 
-      // it('emits a buy event', async () => {
-      //   await expect(transaction).to.emit(crowdsale, 'Buy')
-      //     .withArgs(amount, user1.address)
-      // })
+      it('emits a buy event', async () => {
+        const event = result.events[0]
+        const event_args = result.events[0].args
+        // console.log(event)
+        // console.log(event_args)
+        expect(event.event).to.equal('Buy')
+        expect(event_args.buyer).to.equal(user1.address)
+        expect(event_args.amount_tokens).to.equal(amount)
+        expect(event_args.amount_eth).to.equal(eth)
+      })
 
       it('updates contributions mapping for tokens and eth', async () => {
         const contribution = await crowdsale.contributions(user1.address)
