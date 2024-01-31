@@ -10,6 +10,7 @@ contract Crowdsale {
 	uint256 public price;
 	uint256 public maxTokens;
 	uint256 public tokensSold;
+	// uint256 public tokensSold2;
 	uint256 public ico_start = block.timestamp - 3600;
 	uint256 public ico_end = block.timestamp + 3600;
 	bool public ico_finalized = false;
@@ -78,6 +79,7 @@ contract Crowdsale {
     	contributions[msg.sender].tokenAmount += _amount;
 
 		tokensSold += _amount;
+		// tokensSold2 += _amount;
 
 		emit Buy(msg.sender, _amount, msg.value);
 		// emit Buy(_amount, msg.sender);
@@ -87,19 +89,16 @@ contract Crowdsale {
 		price = _price;
 	}
 
+	function setPrice2(uint256 _price) public onlyOwner {
+		price = _price;
+	}
+
 	function finalize() public afterEnd {
-		require(ico_finalized = false, "ICO already finalized, can't happen twice");
-
+		require(ico_finalized == false, "ICO already finalized, can't happen twice");
 		ico_finalized = true;
-		// // Send all tokens to crowdsale creator
-		// require(token.transfer(owner, token.balanceOf(address(this))));
 
-		// // Send Ether to crowdsale creator
-		// uint256 value = address(this).balance;
-		// (bool sent, ) = owner.call{value: value }("");
-		// require(sent);
-
-		// emit Finalize(tokensSold, value);
+		uint256 value = address(this).balance;
+		emit Finalize(tokensSold, value);
 	}
 
 	function addToWhitelist(address _address) public onlyOwner {

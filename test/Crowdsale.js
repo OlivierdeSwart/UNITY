@@ -233,26 +233,27 @@ describe('Crowdsale', () => {
     })
   })
 
-  describe('Finalizing Sale', () => {
+  describe('Finalizing ICO', () => {
     let transaction, result
     let amount = tokens(10)
     let value = ether(20)
 
-    describe('Success', () => {
+    describe('Finalizing ICO: Success', () => {
       beforeEach(async () => {
-        transaction = await crowdsale.connect(deployer).changeIcoEnd(1706684614)
-        transaction = await crowdsale.connect(deployer).addToWhitelist(user1.address)
-        transaction = await crowdsale.connect(user1).buyTokens(amount, { value: value})
-        result = await transaction.wait()
+        await crowdsale.connect(deployer).changeIcoEnd(1706684614)
+        await crowdsale.connect(deployer).addToWhitelist(user1.address)
+        await crowdsale.connect(user1).buyTokens(amount, { value: value})
+
+        
+        // let icoFinalized = await crowdsale.ico_finalized();
+        // console.log('ico_finalized:', icoFinalized);
 
         transaction = await crowdsale.connect(deployer).finalize()
         result = await transaction.wait()
       })
 
       it('changes ico_finalized to true', async () => {
-        console.log(crowdsale.ico_finalized)
-        expect(await crowdsale.ico_finalized).to.equal(true)
-        // expect(await token.balanceOf(deployer.address)).to.equal(tokens(999990))
+        expect(await crowdsale.ico_finalized()).to.equal(true)
       })
 
       // it('transfers ETH balance to owner', async () => {
@@ -265,10 +266,10 @@ describe('Crowdsale', () => {
       })
     })
 
-    describe('Failure', () => {
+    describe('Finalizing ICO: Failure', () => {
 
-       it('prevents non-owner from finalizing', async () => {
-        await expect(crowdsale.connect(user1).finalize()).to.be.reverted
+      it('does not finalize before the ico_end time', async () => {
+        await expect(crowdsale.connect(deployer).finalize()).to.be.reverted;
       })
     })
   })
@@ -278,11 +279,10 @@ describe('Crowdsale', () => {
     let amount = tokens(10)
     let value = ether(10)
 
-    describe('Failure', () => {
-
-      //  it('prevents non-whitelisted address from buying tokens', async () => {
-      //   await expect(crowdsale.connect(user1).buyTokens(amount, { value: value})).to.be.reverted
-      // })
+    describe('Whitelist Functions: Failure', () => {
+      it('prevents non-whitelisted address from buying tokens', async () => {
+        await expect(crowdsale.connect(deployer).buyTokens(tokens(10))).to.be.reverted;
+      })
     })
   })
 
