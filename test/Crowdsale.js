@@ -236,32 +236,34 @@ describe('Crowdsale', () => {
   describe('Finalizing Sale', () => {
     let transaction, result
     let amount = tokens(10)
-    let value = ether(10)
+    let value = ether(20)
 
-    // describe('Success', () => {
-    //   beforeEach(async () => {
-    //     transaction = await crowdsale.connect(deployer).addToWhitelist(user1.address)
-    //     transaction = await crowdsale.connect(user1).buyTokens(amount, { value: value})
-    //     result = await transaction.wait()
+    describe('Success', () => {
+      beforeEach(async () => {
+        transaction = await crowdsale.connect(deployer).changeIcoEnd(1706684614)
+        transaction = await crowdsale.connect(deployer).addToWhitelist(user1.address)
+        transaction = await crowdsale.connect(user1).buyTokens(amount, { value: value})
+        result = await transaction.wait()
 
-    //     transaction = await crowdsale.connect(deployer).finalize()
-    //     result = await transaction.wait()
-    //   })
+        transaction = await crowdsale.connect(deployer).finalize()
+        result = await transaction.wait()
+      })
 
-    //   it('transfers remaining tokens to owner', async () => {
-    //     expect(await token.balanceOf(crowdsale.address)).to.equal(0)
-    //     expect(await token.balanceOf(deployer.address)).to.equal(tokens(999990))
-    //   })
+      it('changes ico_finalized to true', async () => {
+        console.log(crowdsale.ico_finalized)
+        expect(await crowdsale.ico_finalized).to.equal(true)
+        // expect(await token.balanceOf(deployer.address)).to.equal(tokens(999990))
+      })
 
-    //   it('transfers ETH balance to owner', async () => {
-    //     expect(await ethers.provider.getBalance(crowdsale.address)).to.equal(0)
-    //   })
+      // it('transfers ETH balance to owner', async () => {
+      //   expect(await ethers.provider.getBalance(crowdsale.address)).to.equal(0)
+      // })
 
-    //   it('emits finalize event', async () => {
-    //     await expect(transaction).to.emit(crowdsale, "Finalize")
-    //       .withArgs(amount, value)
-    //   })
-    // })
+      it('emits finalize event', async () => {
+        await expect(transaction).to.emit(crowdsale, "Finalize")
+          .withArgs(amount, value)
+      })
+    })
 
     describe('Failure', () => {
 

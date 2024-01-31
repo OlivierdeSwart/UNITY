@@ -87,9 +87,10 @@ contract Crowdsale {
 		price = _price;
 	}
 
-	function finalize() public {
-		require(ico_finalized = false, "ICO already finalized, can't happen twice")
-		ico_finalized = true
+	function finalize() public afterEnd {
+		require(ico_finalized = false, "ICO already finalized, can't happen twice");
+
+		ico_finalized = true;
 		// // Send all tokens to crowdsale creator
 		// require(token.transfer(owner, token.balanceOf(address(this))));
 
@@ -111,6 +112,10 @@ contract Crowdsale {
 
 	function changeIcoStart(uint256 _time) public onlyOwner {
     	ico_start = _time;
+	}
+
+	function changeIcoEnd(uint256 _time) public onlyOwner {
+    	ico_end = _time;
 	}
 
 
