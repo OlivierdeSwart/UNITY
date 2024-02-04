@@ -10,12 +10,12 @@ contract Crowdsale {
 	uint256 public price;
 	uint256 public maxTokens;
 	uint256 public tokensSold;
-	// uint256 public tokensSold2;
 	uint256 public ico_start = block.timestamp - 3600;
 	uint256 public ico_end = block.timestamp + 3600;
 	bool public ico_finalized = false;
 	uint256 public buyMinTokens = 10 * (10**18);
-	uint256 public buyMaxTokens = 1000 * (10**18);
+	uint256 public buyMaxTokens = 1000 * (10**18);	
+	uint256 public contributionAddressesLength = 0;
 
 	struct Participant {
     	uint256 etherAmount;
@@ -27,6 +27,7 @@ contract Crowdsale {
 	event Finalize(uint256 tokensSold, uint256 value);
 
 	mapping(address => bool) public whitelist;
+	address[] public contributionAddresses;
 	mapping(address => Participant) public contributions;
 
 	constructor(
@@ -78,8 +79,10 @@ contract Crowdsale {
 		contributions[msg.sender].etherAmount += msg.value;
     	contributions[msg.sender].tokenAmount += _amount;
 
+    	contributionAddressesLength ++;
+    	contributionAddresses.push(msg.sender);
+
 		tokensSold += _amount;
-		// tokensSold2 += _amount;
 
 		emit Buy(msg.sender, _amount, msg.value);
 		// emit Buy(_amount, msg.sender);
@@ -98,6 +101,8 @@ contract Crowdsale {
 		ico_finalized = true;
 
 		uint256 value = address(this).balance;
+
+
 		emit Finalize(tokensSold, value);
 	}
 

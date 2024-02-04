@@ -244,7 +244,6 @@ describe('Crowdsale', () => {
         await crowdsale.connect(deployer).addToWhitelist(user1.address)
         await crowdsale.connect(user1).buyTokens(amount, { value: value})
 
-        
         // let icoFinalized = await crowdsale.ico_finalized();
         // console.log('ico_finalized:', icoFinalized);
 
@@ -297,6 +296,34 @@ describe('Crowdsale', () => {
         transaction = await crowdsale.connect(deployer).addToWhitelist(user1.address)
         transaction = await crowdsale.connect(deployer).changeIcoStart(2706599640)
         await expect(crowdsale.connect(user1).buyTokens(amount, { value: value})).to.be.reverted
+      })
+    })
+  })
+
+  describe('Array/Mapping Checks', () => {
+
+    describe('Success', () => {
+    let transaction, result, contributionAddressesLength
+    let amount = tokens(10)
+    let eth = tokens(20)
+
+    beforeEach(async () => {
+      await crowdsale.connect(deployer).addToWhitelist(user1.address)
+      await crowdsale.connect(user1).buyTokens(amount, { value: ether(20) })
+      await crowdsale.connect(deployer).addToWhitelist(user2.address)
+      await crowdsale.connect(user2).buyTokens(amount, { value: ether(20) })
+    })
+
+      it('Updates contributionAddressesLength', async () => {
+        contributionAddressesLength = await crowdsale.contributionAddressesLength();
+        expect(contributionAddressesLength).to.equal(2);
+      })
+
+      it('Puts addresses in mapping', async () => {
+        const firstAddress = await crowdsale.contributionAddresses(0);
+        const secondAddress = await crowdsale.contributionAddresses(1);
+        expect(firstAddress).to.equal(user1.address);
+        expect(secondAddress).to.equal(user2.address);
       })
     })
   })
