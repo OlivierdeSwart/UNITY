@@ -14,9 +14,9 @@ contract Crowdsale {
 	uint256 public ico_end = block.timestamp + 3600;
 	bool public ico_finalized = false;
 	uint256 public buyMinTokens = 10 * (10**18);
-	uint256 public buyMaxTokens = 1000 * (10**18);	
-	uint256 public contributionAddressesLength = 0;
-	uint256 public fundraising_goal = 11 * (10**18);
+	uint256 public buyMaxTokens = 1000 * (10**18);
+	// uint256 public contributionAddressesLength = 0;
+	uint256 public fundraising_goal = 1 * (10**18);
 
 
 	struct Participant {
@@ -26,7 +26,8 @@ contract Crowdsale {
 
 	event Buy(address buyer, uint256 amount_tokens, uint256 amount_eth);
 	// event Buy(uint256 amount, address buyer);
-	event Finalize(uint256 tokensSold, uint256 value);
+	event FinalizeSuccess(uint256 tokensSold, uint256 value);
+	event FinalizeFailure(uint256 tokensSold, uint256 value);
 
 	mapping(address => bool) public whitelist;
 	address[] public contributionAddresses;
@@ -81,7 +82,7 @@ contract Crowdsale {
 		contributions[msg.sender].etherAmount += msg.value;
     	contributions[msg.sender].tokenAmount += _amount;
 
-    	contributionAddressesLength ++;
+    	// contributionAddressesLength ++;
     	contributionAddresses.push(msg.sender);
 
 		tokensSold += _amount;
@@ -107,35 +108,32 @@ contract Crowdsale {
 		if (value > fundraising_goal) {
         // Assuming you have a function to purchase tokens
 	        for (uint i = 0; i < contributionAddresses.length; i++) {
-	            address contributor = contributors[i];
+	            address contributor = contributionAddresses[i];
 	            Participant memory participant = contributions[contributor];
 	            if (participant.etherAmount > 0) {
-	                // Purchase tokens for the contributor
-	                // This is pseudocode; replace it with your actual token purchase logic
-	                // purchaseTokensFor(contributor, participant.etherAmount);
-	               require(token.transfer(msg.sender, participant.tokenAmount));
-	                // Update mapping to reflect tokens purchased, assuming etherAmount is now 0
-	                contributions[contributor].tokenAmount = 0; // Adjust this based on your logic
+	                require(token.transfer(contributor, participant.tokenAmount));
+	                contributions[contributor].tokenAmount = 0;
 	            }
 	        }
+		emit FinalizeSuccess(tokensSold, value);
     	} 
-    	// else {
-	    //     // Refund ether to all contributors
-	    //     for (uint i = 0; i < contributionAddresses.length; i++) {
-	    //         address contributor = contributors[i];
-	    //         Participant memory participant = contributions[contributor];
-	    //         if (participant.etherAmount > 0) {
-	    //             // Refund ether
-	    //             (bool sent, ) = contributor.call{value: participant.etherAmount}("");
-	    //             require(sent, "Failed to send Ether");
-	    //             // Update mapping to reflect ether refunded
-	    //             contributions[contributor].etherAmount = 0;
-	    //         }
-	    //     }
-    	// }
+    	else {
+	        // Refund ether to all contributors
+	        for (uint i = 0; i < contributionAddresses.length; i++) {
+	            address contributor = contributionAddresses[i];
+	            Participant memory participant = contributions[contributor];
+	            if (participant.etherAmount > 0) {
+	                // Refund ether
+	                (bool sent, ) = contributor.call{value: participant.etherAmount}("");
+	                require(sent, "Failed to send Ether");
+	                // Update mapping to reflect ether refunded
+	                contributions[contributor].etherAmount = 0;
+	            }
+	        }
+		emit FinalizeFailure(tokensSold, value);
+    	}
 
 
-		emit Finalize(tokensSold, value);
 	}
 
 	function addToWhitelist(address _address) public onlyOwner {
@@ -152,6 +150,10 @@ contract Crowdsale {
 
 	function changeIcoEnd(uint256 _time) public onlyOwner {
     	ico_end = _time;
+	}
+
+	function changeFundraisingGoal(uint256 _amount) public onlyOwner {
+    	fundraising_goal = _amount;
 	}
 
 

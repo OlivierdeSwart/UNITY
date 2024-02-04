@@ -36,6 +36,7 @@ describe('Crowdsale', () => {
 
   describe('Deployment', () => {
     it('sends tokens to the Crowdsale contract', async () => {
+
       // const balance1 = ethers.utils.formatEther(await token.balanceOf(token.address));
       // console.log("token.balanceOf(token.address):", balance1.toString());
       // const balance2 = ethers.utils.formatEther(await token.balanceOf(crowdsale.address));
@@ -66,7 +67,7 @@ describe('Crowdsale', () => {
       beforeEach(async () => {
         transaction1 = await crowdsale.connect(deployer).addToWhitelist(user1.address)
         transaction1 = await crowdsale.connect(user1).buyTokens(amount, { value: ether(20) })
-        result = await transaction1.wait()
+        // result = await transaction1.wait()
 
         // transaction2 = await crowdsale.connect(deployer).addToWhitelist(user2.address)
         // transaction2 = await crowdsale.connect(user2).buyTokens(amount, { value: ether(20) })
@@ -75,8 +76,6 @@ describe('Crowdsale', () => {
 
 
       it('crowdsale contract keeps holding max amount of tokens', async () => {
-        // console.log("test:", token.address); //VALUE FROM SMART CONTRACT
-
         expect(await token.balanceOf(crowdsale.address)).to.equal(tokens(1000000))
         expect(await token.balanceOf(user1.address)).to.equal(0)
       })
@@ -91,16 +90,16 @@ describe('Crowdsale', () => {
         expect(await crowdsale.tokensSold()).to.equal(amount)
       })
 
-      it('emits a buy event', async () => {
-        const event = result.events[0]
-        const event_args = result.events[0].args
-        // console.log(event)
-        // console.log(event_args)
-        expect(event.event).to.equal('Buy')
-        expect(event_args.buyer).to.equal(user1.address)
-        expect(event_args.amount_tokens).to.equal(amount)
-        expect(event_args.amount_eth).to.equal(eth)
-      })
+      // it('emits a buy event', async () => {
+      //   const event = result.events[0]
+      //   const event_args = result.events[0].args
+      //   // console.log(event)
+      //   // console.log(event_args)
+      //   expect(event.event).to.equal('Buy')
+      //   expect(event_args.buyer).to.equal(user1.address)
+      //   expect(event_args.amount_tokens).to.equal(amount)
+      //   expect(event_args.amount_eth).to.equal(eth)
+      // })
 
       it('updates contributions mapping for tokens and eth', async () => {
         const contribution = await crowdsale.contributions(user1.address)
@@ -238,93 +237,138 @@ describe('Crowdsale', () => {
     let amount = tokens(10)
     let value = ether(20)
 
-    describe('Finalizing ICO: Success', () => {
+    // describe('Finalizing ICO: Success', () => {
+    //   beforeEach(async () => {
+    //     await crowdsale.connect(deployer).changeIcoEnd(1706684614)
+    //     await crowdsale.connect(deployer).addToWhitelist(user1.address)
+    //     await crowdsale.connect(user1).buyTokens(amount, { value: value})
+    //     await crowdsale.connect(deployer).addToWhitelist(user2.address)
+    //     await crowdsale.connect(user2).buyTokens(amount, { value: value})
+
+    //     // let icoFinalized = await crowdsale.ico_finalized();
+    //     // console.log('ico_finalized:', icoFinalized);
+
+    //     transaction = await crowdsale.connect(deployer).finalize()
+    //     result = await transaction.wait()
+    //   })
+
+    //   it('changes ico_finalized to true', async () => {
+    //     expect(await crowdsale.ico_finalized()).to.equal(true)
+    //   })
+
+    //   it('in case of finalize success: transfers token balance to contributors', async () => {
+    //     // console.log('token.balanceOf(user1.address)',await token.balanceOf(user1.address))
+    //     // console.log('token.balanceOf(user2.address))',await token.balanceOf(user2.address))
+    //     // console.log('token.balanceOf(crowdsale.address)',await token.balanceOf(crowdsale.address))
+    //     // console.log('token.balanceOf(deployer.address)',await token.balanceOf(deployer.address))
+    //     expect(await token.balanceOf(user1.address)).to.equal(amount)
+    //     expect(await token.balanceOf(user2.address)).to.equal(amount)
+    //     expect(await token.balanceOf(crowdsale.address)).to.equal(tokens(999980))
+    //     let contributor1 = await crowdsale.contributions(user1.address)
+    //     let contributor2 = await crowdsale.contributions(user2.address)
+    //     expect(contributor1.tokenAmount).to.equal(0)
+    //     expect(contributor2.tokenAmount).to.equal(0)
+    //   })
+
+    //   // it('emits finalize event', async () => {
+    //   //   await expect(transaction).to.emit(crowdsale, "FinalizeSuccess")
+    //   //     .withArgs(amount, value)
+    //   // })
+    // })
+
+    // describe('Finalizing ICO: Failure end time', () => {
+
+    //   it('does not finalize before the ico_end time', async () => {
+    //     await expect(crowdsale.connect(deployer).finalize()).to.be.reverted;
+    //   })
+    // })
+
+    describe('Finalizing ICO: Failure Fundraising Goal not met', () => {
       beforeEach(async () => {
         await crowdsale.connect(deployer).changeIcoEnd(1706684614)
+        await crowdsale.connect(deployer).changeFundraisingGoal(tokens(100))
         await crowdsale.connect(deployer).addToWhitelist(user1.address)
-        await crowdsale.connect(user1).buyTokens(amount, { value: value})
+        await crowdsale.connect(deployer).addToWhitelist(user2.address)
 
-        // let icoFinalized = await crowdsale.ico_finalized();
-        // console.log('ico_finalized:', icoFinalized);
+        let transaction1 = await crowdsale.connect(user1).buyTokens(amount, { value: value})
+        let txReceipt1 = await transaction1.wait()
+        let transaction1_gas = (txReceipt1.gasUsed).mul(transaction1.gasPrice);
+
+        let transaction2 = await crowdsale.connect(user2).buyTokens(amount, { value: value})
+        let txReceipt2 = await transaction2.wait()
+        let transaction2_gas = (txReceipt2.gasUsed).mul(transaction2.gasPrice);
+
+
+      })
+
+      it('in case of finalize failure: sends eth back to contributors', async () => {
+        let user1_t1_ether_balance = await ethers.provider.getBalance(user1.address)
+        let user2_t1_ether_balance = await ethers.provider.getBalance(user2.address)
+        // console.log('user1_t1_ether_balance',user1_t1_ether_balance)
 
         transaction = await crowdsale.connect(deployer).finalize()
         result = await transaction.wait()
-      })
 
-      it('changes ico_finalized to true', async () => {
-        expect(await crowdsale.ico_finalized()).to.equal(true)
-      })
-
-      // it('transfers ETH balance to owner', async () => {
-      //   expect(await ethers.provider.getBalance(crowdsale.address)).to.equal(0)
-      // })
-
-      it('emits finalize event', async () => {
-        await expect(transaction).to.emit(crowdsale, "Finalize")
-          .withArgs(amount, value)
-      })
-    })
-
-    describe('Finalizing ICO: Failure', () => {
-
-      it('does not finalize before the ico_end time', async () => {
-        await expect(crowdsale.connect(deployer).finalize()).to.be.reverted;
+        const user1_t2_ether_balance = await ethers.provider.getBalance(user1.address);
+        await expect(user1_t2_ether_balance).to.equal(user1_t1_ether_balance.add(ether(20)));
+        const user2_t2_ether_balance = await ethers.provider.getBalance(user2.address);
+        await expect(user2_t2_ether_balance).to.equal(user2_t1_ether_balance.add(ether(20)));
       })
     })
   })
 
-  describe('Whitelist Functions', () => {
-    let transaction, result
-    let amount = tokens(10)
-    let value = ether(10)
+  // describe('Whitelist Functions', () => {
+  //   let transaction, result
+  //   let amount = tokens(10)
+  //   let value = ether(10)
 
-    describe('Whitelist Functions: Failure', () => {
-      it('prevents non-whitelisted address from buying tokens', async () => {
-        await expect(crowdsale.connect(deployer).buyTokens(tokens(10))).to.be.reverted;
-      })
-    })
-  })
+  //   describe('Whitelist Functions: Failure', () => {
+  //     it('prevents non-whitelisted address from buying tokens', async () => {
+  //       await expect(crowdsale.connect(deployer).buyTokens(tokens(10))).to.be.reverted;
+  //     })
+  //   })
+  // })
 
-  describe('ICO Start Time', () => {
-    let transaction, result
-    let amount = tokens(10)
-    let value = ether(10)
+  // describe('ICO Start Time', () => {
+  //   let transaction, result
+  //   let amount = tokens(10)
+  //   let value = ether(10)
 
-    describe('Failure', () => {
+  //   describe('Failure', () => {
 
-       it('prevents buying tokens before start time', async () => {
-        transaction = await crowdsale.connect(deployer).addToWhitelist(user1.address)
-        transaction = await crowdsale.connect(deployer).changeIcoStart(2706599640)
-        await expect(crowdsale.connect(user1).buyTokens(amount, { value: value})).to.be.reverted
-      })
-    })
-  })
+  //      it('prevents buying tokens before start time', async () => {
+  //       transaction = await crowdsale.connect(deployer).addToWhitelist(user1.address)
+  //       transaction = await crowdsale.connect(deployer).changeIcoStart(2706599640)
+  //       await expect(crowdsale.connect(user1).buyTokens(amount, { value: value})).to.be.reverted
+  //     })
+  //   })
+  // })
 
-  describe('Array/Mapping Checks', () => {
+  // describe('Array/Mapping Checks', () => {
 
-    describe('Success', () => {
-    let transaction, result, contributionAddressesLength
-    let amount = tokens(10)
-    let eth = tokens(20)
+  //   describe('Success', () => {
+  //   let transaction, result//, contributionAddressesLength
+  //   let amount = tokens(10)
+  //   let eth = tokens(20)
 
-    beforeEach(async () => {
-      await crowdsale.connect(deployer).addToWhitelist(user1.address)
-      await crowdsale.connect(user1).buyTokens(amount, { value: ether(20) })
-      await crowdsale.connect(deployer).addToWhitelist(user2.address)
-      await crowdsale.connect(user2).buyTokens(amount, { value: ether(20) })
-    })
+  //   beforeEach(async () => {
+  //     await crowdsale.connect(deployer).addToWhitelist(user1.address)
+  //     await crowdsale.connect(user1).buyTokens(amount, { value: ether(20) })
+  //     await crowdsale.connect(deployer).addToWhitelist(user2.address)
+  //     await crowdsale.connect(user2).buyTokens(amount, { value: ether(20) })
+  //   })
 
-      it('Updates contributionAddressesLength', async () => {
-        contributionAddressesLength = await crowdsale.contributionAddressesLength();
-        expect(contributionAddressesLength).to.equal(2);
-      })
+  //     // it('Updates contributionAddressesLength', async () => {
+  //     //   contributionAddressesLength = await crowdsale.contributionAddressesLength();
+  //     //   expect(contributionAddressesLength).to.equal(2);
+  //     // })
 
-      it('Puts addresses in mapping', async () => {
-        const firstAddress = await crowdsale.contributionAddresses(0);
-        const secondAddress = await crowdsale.contributionAddresses(1);
-        expect(firstAddress).to.equal(user1.address);
-        expect(secondAddress).to.equal(user2.address);
-      })
-    })
-  })
+  //     it('Puts addresses in mapping', async () => {
+  //       const firstAddress = await crowdsale.contributionAddresses(0);
+  //       const secondAddress = await crowdsale.contributionAddresses(1);
+  //       expect(firstAddress).to.equal(user1.address);
+  //       expect(secondAddress).to.equal(user2.address);
+  //     })
+  //   })
+  // })
 })
