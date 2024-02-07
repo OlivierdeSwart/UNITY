@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
 
+// This is a simplified version of an ERC-20 Token
+
 contract Token {
     string public name;
     string public symbol;

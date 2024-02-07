@@ -1,16 +1,13 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
-// will compile your contracts, add the Hardhat Runtime Environment's members to the
-// global scope, and execute the script.
 const hre = require("hardhat");
 
 async function main() {
-  const NAME = 'Dapp University'
-  const SYMBOL = 'DAPP'
+  const NAME = 'Ollie Token'
+  const SYMBOL = 'OLLY'
   const MAX_SUPPLY = '1000000'
-  const PRICE = ethers.utils.parseUnits('0.025','ether')
+  const PRICE = ethers.utils.parseUnits('0.0025','ether')
+  const ICO_START = '1706742000'
+  const ICO_END = '1719698400'
+  const FUNDRAISING_GOAL = '100'
 
   const Token = await hre.ethers.getContractFactory('Token')
   let token = await Token.deploy(NAME,SYMBOL,MAX_SUPPLY)
@@ -18,7 +15,7 @@ async function main() {
   console.log(`Token deployed to: ${ token.address} \n`)
 
   const Crowdsale = await hre.ethers.getContractFactory('Crowdsale')
-  let crowdsale = await Crowdsale.deploy(token.address,PRICE,ethers.utils.parseUnits(MAX_SUPPLY,'ether'))
+  let crowdsale = await Crowdsale.deploy(token.address,PRICE,ethers.utils.parseUnits(MAX_SUPPLY,'ether'),ICO_START,ICO_END,FUNDRAISING_GOAL)
   await crowdsale.deployed()
   console.log(`Crowdsale deployed to: ${ crowdsale.address} \n`)
 
@@ -28,8 +25,6 @@ async function main() {
   console.log(`Tokens transferred to Crowdsale\n`)
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
