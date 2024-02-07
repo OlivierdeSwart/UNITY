@@ -27,6 +27,7 @@ function App() {
   const [price, setPrice] = useState(0)
   const [maxTokens, setMaxTokens] = useState(0)
   const [tokensSold, setTokensSold] = useState(0)
+  const [userTokenAmount, setUserTokenAmount] = useState(0)
 
   const [isLoading, setIsLoading] = useState(true)
 
@@ -38,9 +39,9 @@ function App() {
     // Fetch Chain ID
     const { chainId } = await provider.getNetwork()
 
-    console.log('test')
-    console.log(provider)
-    console.log(chainId)
+    // console.log('test')
+    // console.log(provider)
+    // console.log(chainId)
     // console.log([config[chainId].token.address])
     // console.log([provider])
 
@@ -56,7 +57,7 @@ function App() {
 
     //fetch account balance
     const accountBalance = ethers.utils.formatUnits(await token.balanceOf(account), 18)
-    setAccountBalance(accountBalance)
+        setAccountBalance(accountBalance)
 
     const price = ethers.utils.formatUnits(await crowdsale.price(), 18)
     setPrice(price)
@@ -64,6 +65,9 @@ function App() {
     setMaxTokens(maxTokens)
     const tokensSold = ethers.utils.formatUnits(await crowdsale.tokensSold(), 18)
     setTokensSold(tokensSold)
+    let contribution = await crowdsale.contributions(account)
+    let userTokenAmount = ethers.utils.formatUnits(contribution.tokenAmount, 18)
+    setUserTokenAmount(userTokenAmount)
 
     setIsLoading(false)
   }
@@ -78,7 +82,7 @@ function App() {
     <Container>
       <Navigation />
 
-      <h1 className='my-4 text-center'>Introducing DApp Token!</h1>
+      <h1 className='my-4 text-center'>Introducing Ollie Token!</h1>
 
       {isLoading ? (
         <Loading />
@@ -93,7 +97,7 @@ function App() {
       <hr />
 
       {account && (
-        <Info account={account} accountBalance={accountBalance} />
+        <Info account={account} accountBalance={accountBalance} userTokenAmount={userTokenAmount} />
       )}
     </Container>
   );

@@ -2,12 +2,12 @@ const hre = require("hardhat");
 
 async function main() {
   const NAME = 'Ollie Token'
-  const SYMBOL = 'OLLY'
-  const MAX_SUPPLY = '1000000'
-  const PRICE = ethers.utils.parseUnits('0.0025','ether')
+  const SYMBOL = 'OLLIE'
+  const MAX_SUPPLY = '1000'
+  const PRICE = ethers.utils.parseUnits('0.00025','ether')
   const ICO_START = '1706742000'
   const ICO_END = '1719698400'
-  const FUNDRAISING_GOAL = '100'
+  const FUNDRAISING_GOAL = '1000'
 
   const Token = await hre.ethers.getContractFactory('Token')
   let token = await Token.deploy(NAME,SYMBOL,MAX_SUPPLY)

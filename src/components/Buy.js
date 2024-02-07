@@ -15,15 +15,23 @@ const Buy = ({ provider, price, crowdsale, setIsLoading }) => {
         setIsWaiting(true)
 
         try {
-            const signer = await provider.getSigner()
+            let signer = await provider.getSigner()
 
             // We need to calculate the required ETH in order to buy the tokens...
-            const value = ethers.utils.parseUnits((amount * price).toString(), 'ether')
-            const formattedAmount = ethers.utils.parseUnits(amount.toString(), 'ether')
+            // (_amount / 1e18) * price
+            let value = ethers.utils.parseUnits((amount / 1e18 * price).toString(), 'ether')
+            let formattedAmount = ethers.utils.parseUnits(amount.toString(), 'ether')
 
-            const transaction = await crowdsale.connect(signer).buyTokens(formattedAmount, { value: value })
+            let transaction = await crowdsale.connect(signer).buyTokens(formattedAmount, { value: value })
             await transaction.wait()
         } catch {
+            // console.log('signer', await provider.getSigner())
+            const signer = await provider.getSigner();
+            console.log('signer address', await signer.getAddress());
+
+            console.log('value', ethers.utils.parseUnits((amount * price).toString(), 'ether').toString())
+            console.log('formattedAmount', ethers.utils.parseUnits(amount.toString(), 'ether').toString())
+            
             window.alert('User rejected or transaction reverted')
         }
 

@@ -20,7 +20,8 @@ const ether = tokens
 describe('Crowdsale', () => {
   let crowdsale, token
   let accounts, deployer, user1
-  let price = 2
+  // let price = 2
+  let price = ethers.utils.parseUnits('0.00025','ether')
 
   beforeEach(async () => {
       // Load Contracts
@@ -86,6 +87,7 @@ describe('Crowdsale', () => {
 
 
       it('crowdsale contract keeps holding max amount of tokens', async () => {
+        console.log('token value of user1:', await crowdsale.contributions(user1.address).tokenAmount)
         expect(await token.balanceOf(crowdsale.address)).to.equal(tokens(1000000))
         expect(await token.balanceOf(user1.address)).to.equal(0)
       })
@@ -143,6 +145,15 @@ describe('Crowdsale', () => {
         result = await transaction1.wait()
       })
 
+      it('same user can buy twice', async () => {
+        transaction1 = await crowdsale.connect(user1).buyTokens(amount, { value: ether(20) })
+      })
+
+      it('same user can buy twice_v2', async () => {
+      // let transaction = await crowdsale.connect(user1.address).buyTokens(50)//, 125000000000000000)
+      let transaction1 = await crowdsale.connect(user1).buyTokens(ethers.BigNumber.from("50000000000000000000"), { value: ethers.utils.parseUnits("0.125", "ether") });
+      await transaction.wait()
+      })
 
       it('n=2 crowdsale contract keeps holding max amount of tokens', async () => {
         // console.log("test:", token.address);

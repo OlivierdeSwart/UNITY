@@ -89,8 +89,8 @@ contract Crowdsale {
 	// Tokens purchased and Eth spent will be registered in contributions mapping, along with the buyer address
 	// Currently designed and tested to work correctly with 1 purchase order per address only
 	function buyTokens(uint256 _amount) public payable afterStart {
-		require(msg.value == (_amount / 1e18) * price);
-		require(token.balanceOf(address(this)) >= _amount);
+		require((msg.value == (_amount / 1e18) * price), "sent ether does not correspond with price * tokenAmount");
+		require(token.balanceOf(address(this)) >= _amount, "requested amount of tokens is more than whats left in store");
 		require(_amount >= buyMinTokens, "Purchase amount too low");
 		require(_amount <= buyMaxTokens, "Purchase amount too high");
 
