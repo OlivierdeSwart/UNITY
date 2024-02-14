@@ -21,8 +21,8 @@ contract Crowdsale {
 
 	// Create struct to use in mapping
 	struct Participant {
-    	uint256 etherAmount;
-    	uint256 tokenAmount;
+    	uint256 etherAmountWei;
+    	uint256 tokenAmountWei;
 	}
 
 	// Create events
@@ -79,29 +79,37 @@ contract Crowdsale {
 	// No function call needed. 
 	// Not updated to align with latest versions of buyTokens() and finalize()
 	receive() external payable {
-		uint256 _amount = msg.value / price * 1e18;
+		uint256 _amountWei = msg.value / price * 1e18;
 
-		contributions[msg.sender].etherAmount += msg.value;
-    	contributions[msg.sender].tokenAmount += _amount;
+		contributions[msg.sender].etherAmountWei += msg.value;
+    	contributions[msg.sender].tokenAmountWei += _amountWei;
 	}
+
+	error IncorrectPayment(uint256 sent, uint256 required);
+	// event PaymentDetails(uint256 amount, uint256 price); --delete this
 
 	// Function which lets addresses buy Tokens with Eth
 	// Tokens purchased and Eth spent will be registered in contributions mapping, along with the buyer address
 	// Currently designed and tested to work correctly with 1 purchase order per address only
-	function buyTokens(uint256 _amount) public payable afterStart {
-		require((msg.value == (_amount / 1e18) * price), "sent ether does not correspond with price * tokenAmount");
-		require(token.balanceOf(address(this)) >= _amount, "requested amount of tokens is more than whats left in store");
-		require(_amount >= buyMinTokens, "Purchase amount too low");
-		require(_amount <= buyMaxTokens, "Purchase amount too high");
+	function buyTokens(uint256 _tokenAmountWei) public payable afterStart {
+		// require((msg.value == (_tokenAmountWei / 1e18) * price), "sent ether does not correspond with price * tokenAmountWei");
+		uint256 requiredPayment = (_tokenAmountWei / 1e18) * price;
+    	// emit PaymentDetails(_tokenAmountWei, price); --delete this
+    	if (msg.value != requiredPayment) {
+    	    revert IncorrectPayment({sent: msg.value, required: price});
+    	}
+		require(token.balanceOf(address(this)) >= _tokenAmountWei, "requested amount of tokens is more than whats left in store");
+		require(_tokenAmountWei >= buyMinTokens, "Purchase amount too low");
+		require(_tokenAmountWei <= buyMaxTokens, "Purchase amount too high");
 
-		contributions[msg.sender].etherAmount += msg.value;
-    	contributions[msg.sender].tokenAmount += _amount;
+		contributions[msg.sender].etherAmountWei += msg.value;
+    	contributions[msg.sender].tokenAmountWei += _tokenAmountWei;
 
     	contributionAddresses.push(msg.sender);
 
-		tokensSold += _amount;
+		tokensSold += _tokenAmountWei;
 
-		emit Buy(msg.sender, _amount, msg.value);
+		emit Buy(msg.sender, _tokenAmountWei, msg.value);
 	}
 
 	// A function created to do tests on price. 
@@ -123,13 +131,13 @@ contract Crowdsale {
 
 		// Success: Give contributors their tokens
 		// Loop through the contribution mapping and make sure addresses receive their purchased tokens
-		if (value > fundraisingGoal) {
+		if (tokensSold > fundraisingGoal) {
 	        for (uint i = 0; i < contributionAddresses.length; i++) {
 	            address contributor = contributionAddresses[i];
 	            Participant memory participant = contributions[contributor];
-	            if (participant.etherAmount > 0) {
-	                require(token.transfer(contributor, participant.tokenAmount));
-	                contributions[contributor].tokenAmount = 0;
+	            if (participant.etherAmountWei > 0) {
+	                require(token.transfer(contributor, participant.tokenAmountWei));
+	                contributions[contributor].tokenAmountWei = 0;
 	            }
 	        }
 		emit FinalizeSuccess(tokensSold, value);
@@ -140,12 +148,12 @@ contract Crowdsale {
 	        for (uint i = 0; i < contributionAddresses.length; i++) {
 	            address contributor = contributionAddresses[i];
 	            Participant memory participant = contributions[contributor];
-	            if (participant.etherAmount > 0) {
+	            if (participant.etherAmountWei > 0) {
 	                // Refund ether
-	                (bool sent, ) = contributor.call{value: participant.etherAmount}("");
+	                (bool sent, ) = contributor.call{value: participant.etherAmountWei}("");
 	                require(sent, "Failed to send Ether");
 	                // Update mapping to reflect ether refunded
-	                contributions[contributor].etherAmount = 0;
+	                contributions[contributor].etherAmountWei = 0;
 	            }
 	        }
 		emit FinalizeFailure(tokensSold, value);

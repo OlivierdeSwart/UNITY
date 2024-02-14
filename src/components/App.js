@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Container } from 'react-bootstrap';
 import { ethers } from 'ethers';
+import BigNumber from 'bignumber.js';
 
 // Components
 import Navigation from './Navigation';
@@ -27,7 +28,9 @@ function App() {
   const [price, setPrice] = useState(0)
   const [maxTokens, setMaxTokens] = useState(0)
   const [tokensSold, setTokensSold] = useState(0)
-  const [userTokenAmount, setUserTokenAmount] = useState(0)
+  const [userTokenAmountWei, setUserTokenAmountWei] = useState(0)
+  const [icoStart, setIcoStart] = useState(0)
+  const [icoEnd, setIcoEnd] = useState(0)
 
   const [isLoading, setIsLoading] = useState(true)
 
@@ -66,8 +69,20 @@ function App() {
     const tokensSold = ethers.utils.formatUnits(await crowdsale.tokensSold(), 18)
     setTokensSold(tokensSold)
     let contribution = await crowdsale.contributions(account)
-    let userTokenAmount = ethers.utils.formatUnits(contribution.tokenAmount, 18)
-    setUserTokenAmount(userTokenAmount)
+    let userTokenAmountWei = ethers.utils.formatUnits(contribution.tokenAmountWei, 18)
+    setUserTokenAmountWei(userTokenAmountWei)
+    let icoStart = new BigNumber(await crowdsale.icoStart())
+    let icoEnd = await crowdsale.icoEnd()
+
+    console.log(icoStart)
+    let milliseconds = icoStart.multipliedBy(1000).toNumber();
+
+    let date = new Date(milliseconds);
+    
+    let utcString = date.toUTCString();
+    console.log(icoStart, milliseconds, date, utcString)
+
+console.log(utcString);
 
     setIsLoading(false)
   }
@@ -97,7 +112,7 @@ function App() {
       <hr />
 
       {account && (
-        <Info account={account} accountBalance={accountBalance} userTokenAmount={userTokenAmount} />
+        <Info account={account} userTokenAmountWei={userTokenAmountWei} icoStart={icoStart} icoEnd={icoEnd} />
       )}
     </Container>
   );

@@ -1,10 +1,10 @@
-const Info = ({ account, accountBalance, userTokenAmount }) => {
+const Info = ({ account, userTokenAmountWei, icoStart, icoEnd }) => {
 	return(
 		<div>
 			<p><strong>Account: </strong>{account}</p>
-			<p><strong>Tokens Owned: </strong>{userTokenAmount}</p>
-			<p><strong>ICO Start Date: </strong>{accountBalance}</p>
-			<p><strong>ICO End Date: </strong>{accountBalance}</p>
+			<p><strong>Tokens Owned: </strong>{userTokenAmountWei}</p>
+			<p><strong>ICO Start Date: </strong>{icoStart}</p>
+			<p><strong>ICO End Date: </strong>{icoEnd}</p>
 		</div>
 	)
 }

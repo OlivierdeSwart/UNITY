@@ -36,6 +36,22 @@
       "type": "constructor"
     },
     {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "sent",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "required",
+          "type": "uint256"
+        }
+      ],
+      "name": "IncorrectPayment",
+      "type": "error"
+    },
+    {
       "anonymous": false,
       "inputs": [
         {
@@ -141,7 +157,7 @@
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "_amount",
+          "name": "_tokenAmountWei",
           "type": "uint256"
         }
       ],
@@ -220,12 +236,12 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "etherAmount",
+          "name": "etherAmountWei",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "tokenAmount",
+          "name": "tokenAmountWei",
           "type": "uint256"
         }
       ],

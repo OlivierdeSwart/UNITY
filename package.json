@@ -21,7 +21,8 @@
     "redux-devtools-extension": "^2.13.9",
     "redux-thunk": "^2.4.1",
     "reselect": "^4.1.5",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "bignumber.js": "^9.0.2"
   },
   "scripts": {
     "start": "react-scripts start",
