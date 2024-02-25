@@ -19,21 +19,21 @@ const Buy = ({ provider, price, crowdsale, setIsLoading }) => {
 
             // We need to calculate the required ETH in order to buy the tokens...
             // (_amount / 1e18) * price
-            let formattedAmount = ethers.utils.parseUnits(amount.toString(), 'ether') //becomes amount in wei
+            let tokenAmountWei = ethers.utils.parseUnits(amount.toString(), 'ether') //becomes amount in wei
             // let value = ethers.utils.parseUnits((amount / 1e18 * price).toString(), 'ether') //
-            let value = ethers.utils.parseUnits((amount * price).toString(), 'ether') // amount flat, price in wei
+            let valueEtherWei = ethers.utils.parseUnits((amount * price).toString(), 'ether') // amount flat, price in wei
 
-            let transaction = await crowdsale.connect(signer).buyTokens(formattedAmount, { value: value })
+            let transaction = await crowdsale.connect(signer).buyTokens(tokenAmountWei, { value: valueEtherWei })
             await transaction.wait()
         } catch {
             // console.log('signer', await provider.getSigner())
             const signer = await provider.getSigner();
 
-            console.log('amount flat', amount);
-            console.log('price flat', price);
+            console.log('amount flat', amount); //flat amount comes from this component, so probably '100'
+            console.log('price flat', price); //0.00025
             console.log('signer address', await signer.getAddress());
-            console.log('formattedAmount', ethers.utils.parseUnits(amount.toString(), 'ether').toString())
-            console.log('value', ethers.utils.parseUnits((amount * price).toString(), 'ether').toString())
+            console.log('tokenAmountWei', ethers.utils.parseUnits(amount.toString(), 'ether').toString())
+            console.log('valueEtherWei', ethers.utils.parseUnits((amount * price).toString(), 'ether').toString())
             
             window.alert('User rejected or transaction reverted')
         }
