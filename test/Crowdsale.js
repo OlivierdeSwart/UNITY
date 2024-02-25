@@ -10,12 +10,9 @@ const ether = tokens
 // This is the Hardhat test file
 // For timestamps, hardcoded unix converted numbers have been used for simplicity
 
-// Some tests are commented out. They have worked successfully in previous iterations of the project, 
-// but when updated with new functionality some old tests turned from success to failure. 
-// I decided to comment the old tests out instead of removing them to indicate that I did have successful tests before
-
-// Also I decided not to remove many logging statements, to demonstrate how highly I value seeing the actual variable values
-// Testing could have been done a lot more extensive, but because this is not a real-world application it seemed unnecessary
+// I decided not to remove many logging statements, to demonstrate how highly I value seeing the actual variable values
+// Testing could have been done a lot more extensive, but because this is not a real-world application 
+// it seemed unnecessary for my current goal: learning and building an MVP
 
 describe('Crowdsale', () => {
   let crowdsale, token
@@ -97,6 +94,14 @@ describe('Crowdsale', () => {
         console.log('token value of user1:', await crowdsale.contributions(user1.address).tokenAmountWei)
         expect(await token.balanceOf(crowdsale.address)).to.equal(tokens(1000000))
         expect(await token.balanceOf(user1.address)).to.equal(0)
+      })
+
+      it('test with values from react app', async () => {
+        let amountTokensWei3 = ethers.BigNumber.from('100000000000000000000')
+        let valueWei3 = ethers.BigNumber.from('25000000000000000')
+        let transaction3 = await crowdsale.connect(user1).buyTokens(amountTokensWei3, { value: valueWei3 })
+        // let transaction1 = await crowdsale.connect(user1).buyTokens(amountTokensWei, { value: totalPurchasePriceWei })
+        await transaction3.wait()
       })
 
       it('updates contracts ether balance', async () => {

@@ -29,6 +29,8 @@ const Buy = ({ provider, price, crowdsale, setIsLoading }) => {
             // console.log('signer', await provider.getSigner())
             const signer = await provider.getSigner();
 
+            console.log('amount flat', amount);
+            console.log('price flat', price);
             console.log('signer address', await signer.getAddress());
             console.log('formattedAmount', ethers.utils.parseUnits(amount.toString(), 'ether').toString())
             console.log('value', ethers.utils.parseUnits((amount * price).toString(), 'ether').toString())

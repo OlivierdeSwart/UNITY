@@ -71,18 +71,20 @@ function App() {
     let contribution = await crowdsale.contributions(account)
     let userTokenAmountWei = ethers.utils.formatUnits(contribution.tokenAmountWei, 18)
     setUserTokenAmountWei(userTokenAmountWei)
-    let icoStart = new BigNumber(await crowdsale.icoStart())
-    let icoEnd = await crowdsale.icoEnd()
 
-    console.log(icoStart)
-    let milliseconds = icoStart.multipliedBy(1000).toNumber();
+    const icoStartValue = await crowdsale.icoStart();
+    const icoStartMilliseconds = new BigNumber(icoStartValue.toString()).multipliedBy(1000).toNumber();
+    const icoStart = new Date(icoStartMilliseconds);
+    const icoStartString = icoStart.toLocaleString();
+    setIcoStart(icoStartString);
 
-    let date = new Date(milliseconds);
-    
-    let utcString = date.toUTCString();
-    console.log(icoStart, milliseconds, date, utcString)
+    const icoEndValue = await crowdsale.icoEnd();
+    const icoEndMilliseconds = new BigNumber(icoEndValue.toString()).multipliedBy(1000).toNumber();
+    const icoEnd = new Date(icoEndMilliseconds);
+    const icoEndString = icoEnd.toLocaleString();
+    setIcoEnd(icoEndString);
 
-console.log(utcString);
+
 
     setIsLoading(false)
   }

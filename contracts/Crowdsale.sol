@@ -86,18 +86,18 @@ contract Crowdsale {
 	}
 
 	error IncorrectPayment(uint256 sent, uint256 required);
-	// event PaymentDetails(uint256 amount, uint256 price); --delete this
+	event PaymentDetails(uint256 amount, uint256 price);
 
 	// Function which lets addresses buy Tokens with Eth
 	// Tokens purchased and Eth spent will be registered in contributions mapping, along with the buyer address
 	// Currently designed and tested to work correctly with 1 purchase order per address only
 	function buyTokens(uint256 _tokenAmountWei) public payable afterStart {
-		// require((msg.value == (_tokenAmountWei / 1e18) * price), "sent ether does not correspond with price * tokenAmountWei");
-		uint256 requiredPayment = (_tokenAmountWei / 1e18) * price;
-    	// emit PaymentDetails(_tokenAmountWei, price); --delete this
-    	if (msg.value != requiredPayment) {
-    	    revert IncorrectPayment({sent: msg.value, required: price});
-    	}
+		require((msg.value == (_tokenAmountWei / 1e18) * price), "sent ether does not correspond with price * tokenAmountWei");
+		// uint256 requiredPayment = (_tokenAmountWei / 1e18) * price;
+    	// emit PaymentDetails(_tokenAmountWei, price);
+    	// if (msg.value != requiredPayment) {
+    	//     revert IncorrectPayment({sent: msg.value, required: price});
+    	// }
 		require(token.balanceOf(address(this)) >= _tokenAmountWei, "requested amount of tokens is more than whats left in store");
 		require(_tokenAmountWei >= buyMinTokens, "Purchase amount too low");
 		require(_tokenAmountWei <= buyMaxTokens, "Purchase amount too high");
