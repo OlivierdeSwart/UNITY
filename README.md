@@ -15,5 +15,5 @@ Project Overview Video: A concise summary of the project is available via [video
 ## Core Technology - Smart Contracts
 Central to the project are two key smart contracts:
 
-Token.sol: Deployed three times, this contract creates three separate cryptocurrencies: Dapp, mEth, and mDai, which are the primary assets available for exchange.
+Token.sol: This contract creates the Ollie token.
 Crowdsale.sol: This contract enables the core crowdsale functionality, allowing users to purchase the cryptocurrencies mentioned above.
