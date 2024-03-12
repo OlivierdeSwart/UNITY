@@ -1,8 +1,8 @@
 # Ollie Token Crowdsale: Showcase Project #2
-This project introduces the crowdsale of the Ollie token, allowing participants to purchase the token with (Sepolia) Ether.
+This project introduces the crowdsale of the Ollie token, allowing participants to purchase the token with (Sepolia) Ether. The project's focus is on the development of smart contracts, undertaken independently. 
 
 ## Functionality
-The project's focus is on the development of smart contracts, undertaken independently. The smart contract is responsible for holding all funds during the crowdsale period. Should the crowdsale meet its sales goal, the Ollie token is distributed to contributors. If the crowdsale does not reach its goal, Ether contributions are returned to the contributors' wallets.
+The smart contract is responsible for holding all funds during the crowdsale period. Should the crowdsale meet its sales goal, the Ollie token is distributed to contributors. If the crowdsale does not reach its goal, Ether contributions are returned to the contributors' wallets.
 
 ## Technology Stack
 Technologies used include Solidity, JavaScript, Hardhat, React, npm, and node.js.
@@ -15,5 +15,5 @@ Project Overview Video: A concise summary of the project is available via [video
 ## Core Technology - Smart Contracts
 Central to the project are two key smart contracts:
 
-Token.sol: This contract creates the Ollie token.
-Crowdsale.sol: This contract enables the core crowdsale functionality, allowing users to purchase the cryptocurrencies mentioned above.
+- Token.sol: This contract creates the Ollie token.
+- Crowdsale.sol: This contract enables the core crowdsale functionality, allowing users to purchase the cryptocurrencies mentioned above.
