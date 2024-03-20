@@ -1,3 +1,5 @@
+This video describes the project: https://www.loom.com/share/cdcb3458c158464badec48d843cdfef8
+
 # Ollie Token Crowdsale: Showcase Project #2
 This project introduces the crowdsale of the Ollie token, allowing participants to purchase the token with (Sepolia) Ether. The project's focus is on the development of smart contracts, undertaken independently. 
 
