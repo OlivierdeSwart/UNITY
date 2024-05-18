@@ -9,6 +9,10 @@ contract Staking {
     Token public token;
     uint256 public tokensStaked;
 
+    uint256 public constant ANNUAL_YIELD = 60; // 60% annual yield
+    uint256 public constant SECONDS_IN_YEAR = 365 * 24 * 60 * 60; //31 536 000
+    uint256 public constant PRECISION = 1e18;
+
     struct Participant {
         address user;
         uint256 tokenAmountSatoshi;
@@ -16,6 +20,7 @@ contract Staking {
     }
 
     event Stake(address indexed customer, uint256 amount_wbnry);
+    event Withdraw(address indexed customer, uint256 amount_wbnry);
 
     address[] public customerAddressesArray;
     mapping(address => Participant) public customerMapping;
@@ -32,12 +37,36 @@ contract Staking {
     }
 
     modifier amountGreaterThanZero(uint256 _tokenAmountSatoshi) {
-    require(_tokenAmountSatoshi > 0, "Token amount must be greater than zero");
-    _;
+        require(_tokenAmountSatoshi > 0, "Token amount must be greater than zero");
+        _;
+    }
+
+    function calculateCurrentBalance(address user) public view returns (uint256) {
+        Participant storage participant = customerMapping[user];
+        uint256 initialAmount = participant.tokenAmountSatoshi;
+        uint256 startTime = participant.latestStakeTime;
+
+        uint256 timeElapsed = block.timestamp - startTime;
+        // uint256 ratePerSecond = (ANNUAL_YIELD * PRECISION) / (100 * SECONDS_IN_YEAR);
+
+        // // Calculate linear interest with precision
+        // uint256 accruedInterest = initialAmount * ratePerSecond * timeElapsed / PRECISION;
+        // uint256 currentBalance = initialAmount + accruedInterest;
+        // return currentBalance;
+
+        uint256 ratePerSecond = ANNUAL_YIELD * PRECISION / SECONDS_IN_YEAR / 100; // Yield per second with 18 decimals
+
+        // Compound interest calculation
+        uint256 compoundedAmount = initialAmount;
+        for (uint256 i = 0; i < timeElapsed; i++) {
+            compoundedAmount = compoundedAmount * (PRECISION + ratePerSecond) / PRECISION;
+        }
+
+        return compoundedAmount;
     }
 
     function stake(uint256 _tokenAmountSatoshi) public amountGreaterThanZero(_tokenAmountSatoshi) {
-		token.approve(address(this), _tokenAmountSatoshi);
+        token.approve(address(this), _tokenAmountSatoshi);
 
         require(token.balanceOf(msg.sender) >= _tokenAmountSatoshi, "insufficient token balance");
         require(token.allowance(msg.sender, address(this)) >= _tokenAmountSatoshi, "insufficient allowance");
@@ -48,11 +77,10 @@ contract Staking {
             customerAddressesArray.push(msg.sender);
         }
 
-        customerMapping[msg.sender] = Participant({
-            user: msg.sender,
-            tokenAmountSatoshi: customerMapping[msg.sender].tokenAmountSatoshi + _tokenAmountSatoshi,
-            latestStakeTime: block.timestamp
-        });
+        Participant storage participant = customerMapping[msg.sender];
+        participant.tokenAmountSatoshi = calculateCurrentBalance(msg.sender) + _tokenAmountSatoshi;
+        participant.latestStakeTime = block.timestamp;
+        participant.user = msg.sender;
 
         tokensStaked += _tokenAmountSatoshi;
 
@@ -60,19 +88,34 @@ contract Staking {
     }
 
     function withdraw(uint256 _tokenAmountSatoshi) public amountGreaterThanZero(_tokenAmountSatoshi) {
-        require(customerMapping[msg.sender].tokenAmountSatoshi >= _tokenAmountSatoshi, "insufficient staked token balance");
+        Participant storage participant = customerMapping[msg.sender];
+        uint256 currentBalance = calculateCurrentBalance(msg.sender);
+
+        require(currentBalance >= _tokenAmountSatoshi, "insufficient staked token balance");
 
         token.transfer(msg.sender, _tokenAmountSatoshi);
 
-        customerMapping[msg.sender].tokenAmountSatoshi -= _tokenAmountSatoshi;
+        participant.tokenAmountSatoshi = currentBalance - _tokenAmountSatoshi;
+        participant.latestStakeTime = block.timestamp;
+
         tokensStaked -= _tokenAmountSatoshi;
+
+        emit Withdraw(msg.sender, _tokenAmountSatoshi);
     }
 
     function getParticipant(address _customer) public view returns (Participant memory) {
-        return customerMapping[_customer];
+        Participant memory participant = customerMapping[_customer];
+        participant.tokenAmountSatoshi = calculateCurrentBalance(_customer);
+        return participant;
     }
 
     function getCustomerAddressesArray() public view returns (address[] memory) {
         return customerAddressesArray;
     }
+
+    function updateTimestamp(address user, uint256 newTimestamp) public onlyOwner {
+        require(customerMapping[user].user != address(0), "User does not exist");
+        customerMapping[user].latestStakeTime = newTimestamp;
+    }
+
 }
