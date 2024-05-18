@@ -46,22 +46,21 @@ describe('Staking & Withdrawing', () => {
 
     describe('calculateCurrentBalance', async () => {
         beforeEach(async () => {
-            let approval = await token.connect(user1).approve(staking.address, tokens(20));
+            let approval = await token.connect(user1).approve(staking.address, tokens(10));
             await approval.wait();
 
-            let transaction = await staking.connect(user1).stake(tokens(20));
+            let transaction = await staking.connect(user1).stake(tokens(10));
             await transaction.wait();
         });
 
         it('Should calculate the right balance after no passed time', async () => {
-            const currentBalance = await staking.calculateCurrentBalance(user1.address);
-            expect(currentBalance).to.be.closeTo(tokens(20), tokens(1)); // Allow small deviation for testing
+            const currentBalance = await staking.calculateCurrentBalanceCompound(user1.address);
+            expect(currentBalance).to.be.closeTo(tokens(10), tokens(1)); // Allow small deviation for testing
         });
 
         it('Should calculate the right balance after no passed time', async () => {
             const oneYearAgo = (await ethers.provider.getBlock('latest')).timestamp - 365 * 24 * 60 * 60;
             await staking.connect(deployer_owner).updateTimestamp(user1.address, oneYearAgo);
-
             
             const participant = await staking.getParticipant(user1.address);
             let latestStakeTime = participant.latestStakeTime.toNumber();
@@ -71,103 +70,106 @@ describe('Staking & Withdrawing', () => {
             latestStakeTime = new Date(latestStakeTime * 1000);
             // console.log('Latest Stake Time (CEST):', latestStakeTime.toLocaleString('en-GB', { timeZone: 'Europe/Berlin' }));
 
-            const currentBalance = await staking.calculateCurrentBalance(user1.address);
-            console.log(currentBalance)
-            expect(currentBalance).to.be.closeTo(tokens(32), tokens(1)); // Allow small deviation for testing
+            const currentBalanceLinear = await staking.calculateCurrentBalanceLinear(user1.address);
+            // console.log('currentBalanceLinear:',currentBalanceLinear)
+
+            const currentBalanceCompound = await staking.calculateCurrentBalanceCompound(user1.address);
+            // console.log('currentBalanceCompound:', currentBalanceCompound)
+            expect(currentBalanceCompound).to.be.closeTo(tokens(18), tokens(1)); // Allow small deviation for testing
         });
 
         
     });
 
-    // describe('Staking one user once positive', async () => {
-    //     beforeEach(async () => {
-    //         let approval = await token.connect(user1).approve(staking.address, tokens(20));
-    //         await approval.wait();
+    describe('Staking one user once positive', async () => {
+        beforeEach(async () => {
+            let approval = await token.connect(user1).approve(staking.address, tokens(20));
+            await approval.wait();
 
-    //         let transaction = await staking.connect(user1).stake(tokens(20));
-    //         await transaction.wait();
-    //     });
+            let transaction = await staking.connect(user1).stake(tokens(20));
+            await transaction.wait();
+        });
 
-    //     it('Should have the right balance after staking', async () => {
-    //         const participant = await staking.getParticipant(user1.address);
-    //         expect(participant.tokenAmountSatoshi).to.equal(tokens(20));
-    //         expect(await token.balanceOf(user1.address)).to.equal(tokens(980));
-    //         expect(await token.balanceOf(staking.address)).to.equal(tokens(20));
-    //     });
+        it('Should have the right balance after staking', async () => {
+            const participant = await staking.getParticipant(user1.address);
+            expect(participant.tokenAmountSatoshi).to.equal(tokens(20));
+            expect(await token.balanceOf(user1.address)).to.equal(tokens(980));
+            expect(await token.balanceOf(staking.address)).to.equal(tokens(20));
+        });
 
-    //     it('Should retrieve all customer addresses', async () => {
-    //         const customerAddresses = await staking.getCustomerAddressesArray();
-    //         expect(customerAddresses).to.include(user1.address);
-    //     });
+        it('Should retrieve all customer addresses', async () => {
+            const customerAddresses = await staking.getCustomerAddressesArray();
+            expect(customerAddresses).to.include(user1.address);
+        });
 
-        // it('Should correctly store and retrieve participant data', async () => {
-        //     const participant = await staking.getParticipant(user1.address);
-        //     expect(participant.user).to.equal(user1.address);
-        //     expect(participant.tokenAmountSatoshi).to.equal(tokens(20));
-        //     let latestStakeTime = participant.latestStakeTime.toNumber();
+        it('Should correctly store and retrieve participant data', async () => {
+            const participant = await staking.getParticipant(user1.address);
+            expect(participant.user).to.equal(user1.address);
+            expect(participant.tokenAmountSatoshi).to.equal(tokens(20));
+            let latestStakeTime = participant.latestStakeTime.toNumber();
             
-        //     expect(latestStakeTime).to.be.a('number');
+            expect(latestStakeTime).to.be.a('number');
             
-        //     latestStakeTime = new Date(latestStakeTime * 1000);
-        //     // console.log('Latest Stake Time (CEST):', latestStakeTime.toLocaleString('en-GB', { timeZone: 'Europe/Berlin' }));
-        // });
-    // });
+            latestStakeTime = new Date(latestStakeTime * 1000);
+            // console.log('Latest Stake Time (CEST):', latestStakeTime.toLocaleString('en-GB', { timeZone: 'Europe/Berlin' }));
+        });
+    });
 
-    // describe('Staking two users once positive', async () => {
-    //     beforeEach(async () => {
-    //         let approval = await token.connect(user1).approve(staking.address, tokens(20));
-    //         await approval.wait();
-    //         let transaction = await staking.connect(user1).stake(tokens(20));
-    //         await transaction.wait();         
+    describe('Staking two users once positive', async () => {
+        beforeEach(async () => {
+            let approval = await token.connect(user1).approve(staking.address, tokens(20));
+            await approval.wait();
+            let transaction = await staking.connect(user1).stake(tokens(20));
+            await transaction.wait();         
 
-    //         approval = await token.connect(user2).approve(staking.address, tokens(20));
-    //         await approval.wait();
-    //         transaction = await staking.connect(user2).stake(tokens(20));
-    //         await transaction.wait();
-    //     });
+            approval = await token.connect(user2).approve(staking.address, tokens(20));
+            await approval.wait();
+            transaction = await staking.connect(user2).stake(tokens(20));
+            await transaction.wait();
+        });
 
-    //     it('Should have the right balance after staking twice', async () => {
-    //         const participant1 = await staking.getParticipant(user1.address);
-    //         expect(participant1.tokenAmountSatoshi).to.equal(tokens(20));
-    //         expect(await token.balanceOf(user1.address)).to.equal(tokens(980));
-    //         expect(await token.balanceOf(staking.address)).to.equal(tokens(40));   
+        it('Should have the right balance after staking twice', async () => {
+            const participant1 = await staking.getParticipant(user1.address);
+            expect(participant1.tokenAmountSatoshi).to.equal(tokens(20));
+            expect(await token.balanceOf(user1.address)).to.equal(tokens(980));
+            expect(await token.balanceOf(staking.address)).to.equal(tokens(40));   
             
-    //         const participant2 = await staking.getParticipant(user2.address);
-    //         expect(participant2.tokenAmountSatoshi).to.equal(tokens(20));
-    //         expect(await token.balanceOf(user2.address)).to.equal(tokens(980));
-    //         expect(await token.balanceOf(staking.address)).to.equal(tokens(40));
-    //     });
+            const participant2 = await staking.getParticipant(user2.address);
+            expect(participant2.tokenAmountSatoshi).to.equal(tokens(20));
+            expect(await token.balanceOf(user2.address)).to.equal(tokens(980));
+            expect(await token.balanceOf(staking.address)).to.equal(tokens(40));
+        });
 
 
-    //     it('Array: Should retrieve all customer addresses', async () => {
-    //         const customerAddresses = await staking.getCustomerAddressesArray();
-    //         expect(customerAddresses).to.include(user1.address);
-    //         expect(customerAddresses).to.include(user2.address);
-    //         expect(customerAddresses.length).to.equal(2);
-    //     });
+        it('Array: Should retrieve all customer addresses', async () => {
+            const customerAddresses = await staking.getCustomerAddressesArray();
+            expect(customerAddresses).to.include(user1.address);
+            expect(customerAddresses).to.include(user2.address);
+            expect(customerAddresses.length).to.equal(2);
+        });
 
-    //     it('Mapping: Should retrieve all customer mappings', async () => {
-    //         const participant1 = await staking.getParticipant(user1.address);
-    //         expect(participant1.user).to.equal(user1.address);
-    //         expect(participant1.tokenAmountSatoshi).to.equal(tokens(20));
+        it('Mapping: Should retrieve all customer mappings', async () => {
+            const participant1 = await staking.getParticipant(user1.address);
+            expect(participant1.user).to.equal(user1.address);
+            expect(participant1.tokenAmountSatoshi).to.equal(tokens(20));
         
-    //         const participant2 = await staking.getParticipant(user2.address);
-    //         expect(participant2.user).to.equal(user2.address);
-    //         expect(participant2.tokenAmountSatoshi).to.equal(tokens(20));
-    //     });
+            const participant2 = await staking.getParticipant(user2.address);
+            expect(participant2.user).to.equal(user2.address);
+            expect(participant2.tokenAmountSatoshi).to.equal(tokens(20));
+        });
 
-    //     it('Struct: Should correctly store and retrieve participant data', async () => {
-    //         const participant1 = await staking.getParticipant(user1.address);
-    //         expect(participant1.user).to.equal(user1.address);
-    //         expect(participant1.tokenAmountSatoshi).to.equal(tokens(20));
-    //         expect(ethers.BigNumber.isBigNumber(participant1.latestStakeTime)).to.be.true;
+        it('Struct: Should correctly store and retrieve participant data', async () => {
+            const participant1 = await staking.getParticipant(user1.address);
+            expect(participant1.user).to.equal(user1.address);
+            expect(participant1.tokenAmountSatoshi).to.equal(tokens(20));
+            expect(ethers.BigNumber.isBigNumber(participant1.latestStakeTime)).to.be.true;
             
-    //         const participant2 = await staking.getParticipant(user2.address);
-    //         expect(participant2.user).to.equal(user2.address);
-    //         expect(participant2.tokenAmountSatoshi).to.equal(tokens(20));
-    //         expect(ethers.BigNumber.isBigNumber(participant2.latestStakeTime)).to.be.true;
-    //     });
-    // });
+            const participant2 = await staking.getParticipant(user2.address);
+            expect(participant2.user).to.equal(user2.address);
+            expect(participant2.tokenAmountSatoshi).to.equal(tokens(20));
+            expect(ethers.BigNumber.isBigNumber(participant2.latestStakeTime)).to.be.true;
+        });
+    });
 
     // describe('Staking one user twice positive', async () => {
     //     beforeEach(async () => {

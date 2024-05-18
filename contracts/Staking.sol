@@ -41,7 +41,21 @@ contract Staking {
         _;
     }
 
-    function calculateCurrentBalance(address user) public view returns (uint256) {
+    function calculateCurrentBalanceLinear(address user) public view returns (uint256) {
+        Participant storage participant = customerMapping[user];
+        uint256 initialAmount = participant.tokenAmountSatoshi;
+        uint256 startTime = participant.latestStakeTime;
+
+        uint256 timeElapsed = block.timestamp - startTime;
+        uint256 ratePerSecond = (ANNUAL_YIELD * PRECISION) / (100 * SECONDS_IN_YEAR);
+
+        // Calculate linear interest with precision
+        uint256 accruedInterest = initialAmount * ratePerSecond * timeElapsed / PRECISION;
+        uint256 currentBalance = initialAmount + accruedInterest;
+        return currentBalance;
+    }
+
+    function calculateCurrentBalanceCompound(address user) public view returns (uint256) {
         Participant storage participant = customerMapping[user];
         uint256 initialAmount = participant.tokenAmountSatoshi;
         uint256 startTime = participant.latestStakeTime;
@@ -77,7 +91,7 @@ contract Staking {
         }
 
         Participant storage participant = customerMapping[msg.sender];
-        participant.tokenAmountSatoshi = calculateCurrentBalance(msg.sender) + _tokenAmountSatoshi;
+        participant.tokenAmountSatoshi = calculateCurrentBalanceCompound(msg.sender) + _tokenAmountSatoshi;
         participant.latestStakeTime = block.timestamp;
         participant.user = msg.sender;
 
@@ -88,7 +102,7 @@ contract Staking {
 
     function withdraw(uint256 _tokenAmountSatoshi) public amountGreaterThanZero(_tokenAmountSatoshi) {
         Participant storage participant = customerMapping[msg.sender];
-        uint256 currentBalance = calculateCurrentBalance(msg.sender);
+        uint256 currentBalance = calculateCurrentBalanceCompound(msg.sender);
 
         require(currentBalance >= _tokenAmountSatoshi, "insufficient staked token balance");
 
@@ -109,7 +123,7 @@ contract Staking {
 
     function getParticipant(address _customer) public view returns (Participant memory) {
         Participant memory participant = customerMapping[_customer];
-        participant.tokenAmountSatoshi = calculateCurrentBalance(_customer);
+        participant.tokenAmountSatoshi = calculateCurrentBalanceCompound(_customer);
         return participant;
     }
 
