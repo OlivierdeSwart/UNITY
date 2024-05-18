@@ -85,7 +85,7 @@ contract Crowdsale {
     	contributions[msg.sender].tokenAmountWei += _amountWei;
 	}
 
-	error IncorrectPayment(uint256 sent, uint256 required);
+	// error IncorrectPayment(uint256 sent, uint256 required);
 	event PaymentDetails(uint256 amount, uint256 price);
 
 	// Function which lets addresses buy Tokens with Eth
