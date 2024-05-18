@@ -47,19 +47,18 @@ contract Staking {
         uint256 startTime = participant.latestStakeTime;
 
         uint256 timeElapsed = block.timestamp - startTime;
-        // uint256 ratePerSecond = (ANNUAL_YIELD * PRECISION) / (100 * SECONDS_IN_YEAR);
+        uint256 ratePerSecond = (ANNUAL_YIELD * PRECISION) / SECONDS_IN_YEAR / 100;
 
-        // // Calculate linear interest with precision
-        // uint256 accruedInterest = initialAmount * ratePerSecond * timeElapsed / PRECISION;
-        // uint256 currentBalance = initialAmount + accruedInterest;
-        // return currentBalance;
-
-        uint256 ratePerSecond = ANNUAL_YIELD * PRECISION / SECONDS_IN_YEAR / 100; // Yield per second with 18 decimals
-
-        // Compound interest calculation
+        // Compound interest approximation
+        uint256 base = PRECISION + ratePerSecond;
         uint256 compoundedAmount = initialAmount;
-        for (uint256 i = 0; i < timeElapsed; i++) {
-            compoundedAmount = compoundedAmount * (PRECISION + ratePerSecond) / PRECISION;
+
+        while (timeElapsed > 0) {
+            if (timeElapsed % 2 == 1) {
+                compoundedAmount = compoundedAmount * base / PRECISION;
+            }
+            base = base * base / PRECISION;
+            timeElapsed /= 2;
         }
 
         return compoundedAmount;
@@ -103,6 +102,11 @@ contract Staking {
         emit Withdraw(msg.sender, _tokenAmountSatoshi);
     }
 
+    function updateTimestamp(address user, uint256 newTimestamp) public onlyOwner {
+        require(customerMapping[user].user != address(0), "User does not exist");
+        customerMapping[user].latestStakeTime = newTimestamp;
+    }
+
     function getParticipant(address _customer) public view returns (Participant memory) {
         Participant memory participant = customerMapping[_customer];
         participant.tokenAmountSatoshi = calculateCurrentBalance(_customer);
@@ -112,10 +116,4 @@ contract Staking {
     function getCustomerAddressesArray() public view returns (address[] memory) {
         return customerAddressesArray;
     }
-
-    function updateTimestamp(address user, uint256 newTimestamp) public onlyOwner {
-        require(customerMapping[user].user != address(0), "User does not exist");
-        customerMapping[user].latestStakeTime = newTimestamp;
-    }
-
 }
