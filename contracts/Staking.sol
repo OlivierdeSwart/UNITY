@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Token.sol";
 import "hardhat/console.sol";
 
-contract Staking {
-    address public owner;
+contract Staking is ReentrancyGuard, Pausable, Ownable {
     Token public token;
     uint256 public totalTokensStaked;
     uint256 public totalTreasuryTokens;
@@ -30,16 +32,10 @@ contract Staking {
     mapping(address => Participant) public customerMapping;
 
     constructor(Token _token) {
-        owner = msg.sender;
         token = _token;
         totalTokensStaked = 0;
         totalTreasuryTokens = 0;
-        annualYield = 60;// 60% annual yield
-    }
-
-    modifier onlyOwner() {
-        require(msg.sender == owner, "caller must be owner");
-        _;
+        annualYield = 60; // 60% annual yield
     }
 
     modifier amountGreaterThanZero(uint256 _tokenAmountSatoshi) {
@@ -85,16 +81,16 @@ contract Staking {
         return compoundedAmount;
     }
 
-    function stake(uint256 _tokenAmountSatoshi) public amountGreaterThanZero(_tokenAmountSatoshi) {
+        function stake(uint256 _tokenAmountSatoshi) public amountGreaterThanZero(_tokenAmountSatoshi) whenNotPaused nonReentrant {
         Participant storage participant = customerMapping[msg.sender];
         participant.rewardAmountSatoshi += calculateCurrentBalanceCompound(msg.sender) - participant.directStakeAmountSatoshi - participant.rewardAmountSatoshi;
-
-        token.approve(address(this), _tokenAmountSatoshi);
 
         require(token.balanceOf(msg.sender) >= _tokenAmountSatoshi, "insufficient token balance");
         require(token.allowance(msg.sender, address(this)) >= _tokenAmountSatoshi, "insufficient allowance");
 
-        token.transferFrom(msg.sender, address(this), _tokenAmountSatoshi);
+        // Transfer tokens from the sender to the contract
+        bool success = token.transferFrom(msg.sender, address(this), _tokenAmountSatoshi);
+        require(success, "Token transfer failed");
 
         if (customerMapping[msg.sender].user == address(0)) {
             customerAddressesArray.push(msg.sender);
@@ -109,8 +105,7 @@ contract Staking {
         emit Stake(msg.sender, _tokenAmountSatoshi);
     }
 
-    function withdraw(uint256 _tokenAmountSatoshi) public amountGreaterThanZero(_tokenAmountSatoshi) {
-
+    function withdraw(uint256 _tokenAmountSatoshi) public amountGreaterThanZero(_tokenAmountSatoshi) whenNotPaused nonReentrant {
         Participant storage participant = customerMapping[msg.sender];
         participant.rewardAmountSatoshi += calculateCurrentBalanceCompound(msg.sender) - participant.directStakeAmountSatoshi - participant.rewardAmountSatoshi;
 
@@ -118,13 +113,9 @@ contract Staking {
         require(totalBalance >= _tokenAmountSatoshi, "insufficient total token balance");
 
         // If amount is more than or equal to reward part. Update both totalTokensStaked and totalTreasuryTokens
-        if(_tokenAmountSatoshi >= participant.rewardAmountSatoshi) {
-        
+        if (_tokenAmountSatoshi >= participant.rewardAmountSatoshi) {
             require(totalTreasuryTokens >= participant.rewardAmountSatoshi, "insufficient treasury token balance");
 
-            // Transfer total amount
-            token.transfer(msg.sender, _tokenAmountSatoshi);
-            
             // Update totalTokensStaked and totalTreasuryTokens
             totalTokensStaked -= _tokenAmountSatoshi - participant.rewardAmountSatoshi;
             totalTreasuryTokens -= participant.rewardAmountSatoshi;
@@ -134,22 +125,22 @@ contract Staking {
             participant.directStakeAmountSatoshi -= _tokenAmountSatoshi - participant.rewardAmountSatoshi;
             participant.rewardAmountSatoshi = 0;
 
-            emit Withdraw(msg.sender, _tokenAmountSatoshi);
-
-        // Else only update totalTreasuryTokens part
-        } else {
-        
-            require(totalTreasuryTokens >= _tokenAmountSatoshi, "insufficient treasury token balance");
-
             // Transfer total amount
             token.transfer(msg.sender, _tokenAmountSatoshi);
-            
+
+            emit Withdraw(msg.sender, _tokenAmountSatoshi);
+        } else {
+            require(totalTreasuryTokens >= _tokenAmountSatoshi, "insufficient treasury token balance");
+
             // Update totalTokensStaked and totalTreasuryTokens
             totalTreasuryTokens -= _tokenAmountSatoshi;
 
             // Update struct
             participant.latestActionTime = block.timestamp;
             participant.rewardAmountSatoshi -= _tokenAmountSatoshi;
+
+            // Transfer total amount
+            token.transfer(msg.sender, _tokenAmountSatoshi);
 
             emit Withdraw(msg.sender, _tokenAmountSatoshi);
         }
@@ -161,25 +152,25 @@ contract Staking {
         customerMapping[user].latestActionTime = newTimestamp;
     }
 
-    function getParticipant(address _customer) public view returns (Participant memory) { //, uint256
+    function getParticipant(address _customer) public view returns (Participant memory) {
         Participant memory participant = customerMapping[_customer];
-        // uint256 currentBalance = calculateCurrentBalanceCompound(_customer);
-        return (participant); //, currentBalance
+        return (participant);
     }
 
     function getCustomerAddressesArray() public view returns (address[] memory) {
         return customerAddressesArray;
     }
 
-    function fundTreasury(uint256 _tokenAmountSatoshi) public amountGreaterThanZero(_tokenAmountSatoshi) {
+    function fundTreasury(uint256 _tokenAmountSatoshi) public amountGreaterThanZero(_tokenAmountSatoshi) whenNotPaused nonReentrant {
+        totalTreasuryTokens += _tokenAmountSatoshi;
+
         token.approve(address(this), _tokenAmountSatoshi);
         token.transferFrom(msg.sender, address(this), _tokenAmountSatoshi);
-        totalTreasuryTokens += _tokenAmountSatoshi;
 
         emit FundTreasury(msg.sender, _tokenAmountSatoshi);
     }
 
-    function changeAnnualYield(uint256 _newAnnualYield) public onlyOwner {
+    function changeAnnualYield(uint256 _newAnnualYield) public onlyOwner whenNotPaused nonReentrant {
         for (uint256 i = 0; i < customerAddressesArray.length; i++) {
             address user = customerAddressesArray[i];
             Participant storage participant = customerMapping[user];
@@ -189,5 +180,15 @@ contract Staking {
         }
         annualYield = _newAnnualYield;
         emit AnnualYieldChanged(_newAnnualYield);
+    }
+
+    // Function to pause the contract
+    function pause() public onlyOwner {
+        _pause();
+    }
+
+    // Function to unpause the contract
+    function unpause() public onlyOwner {
+        _unpause();
     }
 }
