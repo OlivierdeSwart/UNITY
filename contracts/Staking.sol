@@ -9,8 +9,8 @@ contract Staking {
     Token public token;
     uint256 public totalTokensStaked;
     uint256 public totalTreasuryTokens;
+    uint256 public annualYield;
 
-    uint256 public constant ANNUAL_YIELD = 60; // 60% annual yield
     uint256 public constant SECONDS_IN_YEAR = 365 * 24 * 60 * 60; //31 536 000
     uint256 public constant PRECISION = 1e18;
 
@@ -19,11 +19,12 @@ contract Staking {
         uint256 latestActionTime;
         uint256 directStakeAmountSatoshi;
         uint256 rewardAmountSatoshi;
-        // uint256 userTotalbalanceSatoshi; // i dont think we want this. to keep calculateCurrentBalanceCompound as view function, can't have it update state
     }
 
     event Stake(address indexed customer, uint256 amount_wbnry);
     event Withdraw(address indexed customer, uint256 amount_wbnry);
+    event FundTreasury(address indexed funder, uint256 amount_wbnry);
+    event AnnualYieldChanged(uint256 newAnnualYield);
 
     address[] public customerAddressesArray;
     mapping(address => Participant) public customerMapping;
@@ -33,6 +34,7 @@ contract Staking {
         token = _token;
         totalTokensStaked = 0;
         totalTreasuryTokens = 0;
+        annualYield = 60;// 60% annual yield
     }
 
     modifier onlyOwner() {
@@ -45,13 +47,14 @@ contract Staking {
         _;
     }
 
+    // This function is just for testing purposes
     function calculateCurrentBalanceLinear(address user) public view returns (uint256) {
         Participant storage participant = customerMapping[user];
         uint256 startTime = participant.latestActionTime;
         uint256 initialAmount = participant.directStakeAmountSatoshi + participant.rewardAmountSatoshi;
 
         uint256 timeElapsed = block.timestamp - startTime;
-        uint256 ratePerSecond = (ANNUAL_YIELD * PRECISION) / (100 * SECONDS_IN_YEAR);
+        uint256 ratePerSecond = (annualYield * PRECISION) / (100 * SECONDS_IN_YEAR);
 
         // Calculate linear interest with precision
         uint256 accruedInterest = initialAmount * ratePerSecond * timeElapsed / PRECISION;
@@ -65,7 +68,7 @@ contract Staking {
         uint256 initialAmount = participant.directStakeAmountSatoshi + participant.rewardAmountSatoshi;
 
         uint256 timeElapsed = block.timestamp - startTime;
-        uint256 ratePerSecond = (ANNUAL_YIELD * PRECISION) / SECONDS_IN_YEAR / 100;
+        uint256 ratePerSecond = (annualYield * PRECISION) / SECONDS_IN_YEAR / 100;
 
         // Compound interest approximation
         uint256 base = PRECISION + ratePerSecond;
@@ -107,6 +110,7 @@ contract Staking {
     }
 
     function withdraw(uint256 _tokenAmountSatoshi) public amountGreaterThanZero(_tokenAmountSatoshi) {
+
         Participant storage participant = customerMapping[msg.sender];
         participant.rewardAmountSatoshi += calculateCurrentBalanceCompound(msg.sender) - participant.directStakeAmountSatoshi - participant.rewardAmountSatoshi;
 
@@ -115,6 +119,8 @@ contract Staking {
 
         // If amount is more than or equal to reward part. Update both totalTokensStaked and totalTreasuryTokens
         if(_tokenAmountSatoshi >= participant.rewardAmountSatoshi) {
+        
+            require(totalTreasuryTokens >= participant.rewardAmountSatoshi, "insufficient treasury token balance");
 
             // Transfer total amount
             token.transfer(msg.sender, _tokenAmountSatoshi);
@@ -132,6 +138,8 @@ contract Staking {
 
         // Else only update totalTreasuryTokens part
         } else {
+        
+            require(totalTreasuryTokens >= _tokenAmountSatoshi, "insufficient treasury token balance");
 
             // Transfer total amount
             token.transfer(msg.sender, _tokenAmountSatoshi);
@@ -147,6 +155,7 @@ contract Staking {
         }
     }
 
+    // This function is just for testing purposes, needs to be removed in production
     function updateTimestamp(address user, uint256 newTimestamp) public onlyOwner {
         require(customerMapping[user].user != address(0), "User does not exist");
         customerMapping[user].latestActionTime = newTimestamp;
@@ -166,5 +175,19 @@ contract Staking {
         token.approve(address(this), _tokenAmountSatoshi);
         token.transferFrom(msg.sender, address(this), _tokenAmountSatoshi);
         totalTreasuryTokens += _tokenAmountSatoshi;
+
+        emit FundTreasury(msg.sender, _tokenAmountSatoshi);
+    }
+
+    function changeAnnualYield(uint256 _newAnnualYield) public onlyOwner {
+        for (uint256 i = 0; i < customerAddressesArray.length; i++) {
+            address user = customerAddressesArray[i];
+            Participant storage participant = customerMapping[user];
+            uint256 currentBalance = calculateCurrentBalanceCompound(user);
+            participant.rewardAmountSatoshi += currentBalance - participant.directStakeAmountSatoshi - participant.rewardAmountSatoshi;
+            participant.latestActionTime = block.timestamp;
+        }
+        annualYield = _newAnnualYield;
+        emit AnnualYieldChanged(_newAnnualYield);
     }
 }

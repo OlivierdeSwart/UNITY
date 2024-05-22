@@ -34,7 +34,7 @@ contract Token {
         name = _name;
         symbol = _symbol;
         totalSupply = _totalSupply;// * (10**decimals);
-        balanceOf[msg.sender] = 4000 * (10**decimals);
+        balanceOf[msg.sender] = 10000 * (10**decimals);
     }
 
     function transfer(address _to, uint256 _value)

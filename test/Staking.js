@@ -19,12 +19,14 @@ describe('Staking & Withdrawing', () => {
         await staking.deployed();
 
         // Configure accounts
-        [deployer_owner, user1, user2] = await ethers.getSigners();
+        [deployer_owner, user1, user2, user3] = await ethers.getSigners();
         
         // Send tokens to user1 & 2
         let transaction = await token.connect(deployer_owner).transfer(user1.address, tokens(1000));
         await transaction.wait();
         transaction = await token.connect(deployer_owner).transfer(user2.address, tokens(1000));
+        await transaction.wait();
+        transaction = await token.connect(deployer_owner).transfer(user3.address, tokens(1000));
         await transaction.wait();
     });
 
@@ -38,7 +40,7 @@ describe('Staking & Withdrawing', () => {
         });
 
         it('Should have the right balance', async () => {
-            expect(await token.balanceOf(deployer_owner.address)).to.equal(tokens(2000));
+            expect(await token.balanceOf(deployer_owner.address)).to.equal(tokens(7000));
             expect(await token.balanceOf(user1.address)).to.equal(tokens(1000));
             expect(await token.balanceOf(user2.address)).to.equal(tokens(1000));
         });
@@ -87,8 +89,8 @@ describe('Staking & Withdrawing', () => {
             // Wait 1 year
             const oneYearAgo = (await ethers.provider.getBlock('latest')).timestamp - 365 * 24 * 60 * 60;
             await staking.connect(deployer_owner).updateTimestamp(user1.address, oneYearAgo);
-            // console.log('2. Wait 1 year', await staking.calculateCurrentBalanceCompound(user1.address))
             // console.log('2. Participant struct', await staking.getParticipant(user1.address))
+            // console.log('2. Wait 1 year', await staking.calculateCurrentBalanceCompound(user1.address))
 
             // Stake again
             let transaction = await staking.connect(user1).stake(tokens(10));
@@ -110,8 +112,10 @@ describe('Staking & Withdrawing', () => {
             // Wait 1 year again
             await staking.connect(deployer_owner).updateTimestamp(user1.address, oneYearAgo);
             // console.log('6. Wait 1 year again', await staking.calculateCurrentBalanceCompound(user1.address))
+            // console.log('6. Participant struct', await staking.getParticipant(user1.address))
             expect(await staking.calculateCurrentBalanceCompound(user1.address)).to.be.above(tokens(30));
 
+            // Withdraw
 
 
         });
@@ -121,12 +125,33 @@ describe('Staking & Withdrawing', () => {
 
     describe('Staking one user once positive', async () => {
         beforeEach(async () => {
-            let approval = await token.connect(user1).approve(staking.address, tokens(20));
+            let approval = await token.connect(user1).approve(staking.address, tokens(30));
             await approval.wait();
 
             let transaction = await staking.connect(user1).stake(tokens(20));
             await transaction.wait();
         });
+
+        it('Should emit correct event', async () => {
+            let transaction = await staking.connect(user1).stake(tokens(10));
+            const receipt = await transaction.wait();
+            const logs = receipt.events;
+        
+            // Filter logs to get only Stake events
+            const stakeEventLogs = logs.filter(log => log.event === 'Stake');
+        
+            // Ensure there is at least one Stake event log
+            expect(stakeEventLogs.length).to.be.greaterThan(0);
+        
+            // Check if the correct event name is present
+            expect(stakeEventLogs.some(log => log.event === 'Stake')).to.be.true;
+        
+            // Check if the event contains the correct user address argument
+            expect(stakeEventLogs.some(log => log.args && log.args.customer === user1.address)).to.be.true;
+        
+            // Check if the event contains the correct token amount argument
+            expect(stakeEventLogs.some(log => log.args && log.args.amount_wbnry.eq(tokens(10)))).to.be.true;
+        })
 
         it('Should have the right balance after staking', async () => {
             const participant = await staking.getParticipant(user1.address);
@@ -277,7 +302,7 @@ describe('Staking & Withdrawing', () => {
     describe('Treasury funding', async () => {
         beforeEach(async () => {
         // Fund treasury
-        let approval = await token.connect(deployer_owner).approve(staking.address, tokens(1000));
+        let approval = await token.connect(deployer_owner).approve(staking.address, tokens(2000));
         await approval.wait();
         let transaction = await staking.connect(deployer_owner).fundTreasury(tokens(1000));
         await transaction.wait();
@@ -291,6 +316,29 @@ describe('Staking & Withdrawing', () => {
             expect(await staking.totalTreasuryTokens()).to.equal(tokens(1000));
         });
 
+        it('Should emit correct event for fundTreasury', async () => {
+            // Perform the fundTreasury transaction
+            let transaction = await staking.connect(deployer_owner).fundTreasury(tokens(1000));
+            const receipt = await transaction.wait();
+            const logs = receipt.events;
+        
+            // Filter logs to get only FundTreasury events
+            const fundTreasuryEventLogs = logs.filter(log => log.event === 'FundTreasury');
+        
+            // Ensure there is at least one FundTreasury event log
+            expect(fundTreasuryEventLogs.length).to.be.greaterThan(0);
+        
+            // Check if the correct event name is present
+            expect(fundTreasuryEventLogs.some(log => log.event === 'FundTreasury')).to.be.true;
+        
+            // Check if the event contains the correct funder address argument
+            expect(fundTreasuryEventLogs.some(log => log.args && log.args.funder === deployer_owner.address)).to.be.true;
+        
+            // Check if the event contains the correct token amount argument
+            expect(fundTreasuryEventLogs.some(log => log.args && log.args.amount_wbnry.eq(tokens(1000)))).to.be.true;
+        });
+        
+
     });
 
     describe('Simple withdraw positive', async () => {
@@ -301,22 +349,48 @@ describe('Staking & Withdrawing', () => {
             let transaction = await staking.connect(deployer_owner).fundTreasury(tokens(1000));
             await transaction.wait();
 
+            // Stake 20 tokens
             approval = await token.connect(user1).approve(staking.address, tokens(20));
             await approval.wait();
             transaction = await staking.connect(user1).stake(tokens(20));
             await transaction.wait();   
         });
 
+        it('Should emit correct event for withdraw', async () => {
+        
+            // Perform the withdraw
+            let transaction = await staking.connect(user1).withdraw(tokens(5));
+            const receipt = await transaction.wait();
+            const logs = receipt.events;
+        
+            // Filter logs to get only Withdraw events
+            const withdrawEventLogs = logs.filter(log => log.event === 'Withdraw');
+        
+            // Ensure there is at least one Withdraw event log
+            expect(withdrawEventLogs.length).to.be.greaterThan(0);
+        
+            // Check if the correct event name is present
+            expect(withdrawEventLogs.some(log => log.event === 'Withdraw')).to.be.true;
+        
+            // Check if the event contains the correct user address argument
+            expect(withdrawEventLogs.some(log => log.args && log.args.customer === user1.address)).to.be.true;
+        
+            // Check if the event contains the correct token amount argument
+            expect(withdrawEventLogs.some(log => log.args && log.args.amount_wbnry.eq(tokens(5)))).to.be.true;
+        });
+        
+
         it('Should withdraw', async () => {
-                     
+            // console.log(await staking.getParticipant(user1.address))
+
             transaction = await staking.connect(user1).withdraw(tokens(10));
             await transaction.wait();
 
             const participant = await staking.getParticipant(user1.address);
-            console.log(await staking.getParticipant(user1.address))
-            
-            console.log("Total Tokens Staked:", (await staking.totalTokensStaked()).toString());
-            console.log("Total Treasury Tokens:", (await staking.totalTreasuryTokens()).toString());
+
+            // console.log(await staking.getParticipant(user1.address))            
+            // console.log("Total Tokens Staked:", (await staking.totalTokensStaked()).toString());
+            // console.log("Total Treasury Tokens:", (await staking.totalTreasuryTokens()).toString());
             
             expect(participant.directStakeAmountSatoshi).to.be.closeTo(tokens(10), tokens(1));
             expect(participant.rewardAmountSatoshi).to.equal(tokens(0));
@@ -326,32 +400,142 @@ describe('Staking & Withdrawing', () => {
             // expect(await staking.calculateCurrentBalanceCompound(user1.address)).to.be.above(tokens(30));
         });
 
-        // it('Should withdraw twice', async () => {
-        //     let transaction = await staking.connect(user1).withdraw(tokens(9));
-        //     await transaction.wait();
+        it('Should withdraw twice', async () => {
+                     
+            let transaction = await staking.connect(user1).withdraw(tokens(10));
+            await transaction.wait();
+            transaction = await staking.connect(user1).withdraw(tokens(9));
+            await transaction.wait();
 
-        //     const participant = await staking.getParticipant(user1.address);
-        //     expect(participant.tokenAmountSatoshi).to.equal(tokens(1));
-        //     expect(await token.balanceOf(user1.address)).to.equal(tokens(999));
-        //     expect(await token.balanceOf(staking.address)).to.equal(tokens(1));
-        // });
+            // console.log(await staking.getParticipant(user1.address))            
+            // console.log("Contract total Tokens Staked:", (await staking.totalTokensStaked()).toString());
+            // console.log("Contract total Treasury Tokens:", (await staking.totalTreasuryTokens()).toString());
+
+            const participant = await staking.getParticipant(user1.address);
+            expect(participant.directStakeAmountSatoshi).to.be.closeTo(tokens(1), tokens(1));
+            expect(await token.balanceOf(user1.address)).to.equal(tokens(999));
+            expect(await token.balanceOf(staking.address)).to.be.closeTo(tokens(1001), tokens(1));
+        });
     });
 
-    // describe('Withdraw negative', async () => {
-    //     beforeEach(async () => {
-    //         let approval = await token.connect(user1).approve(staking.address, tokens(20));
-    //         await approval.wait();
+    describe('Complex withdrawal positive', async () => {
+        it('Should withdraw correctly when withdraw_amount > accrued rewards. Check contract treasury & total stake too', async () => {
+            // Fund treasury
+            let approval = await token.connect(deployer_owner).approve(staking.address, tokens(1000));
+            await approval.wait();
+            let transaction = await staking.connect(deployer_owner).fundTreasury(tokens(1000));
+            await transaction.wait();
 
-    //         let transaction = await staking.connect(user1).stake(tokens(20));
-    //         await transaction.wait();
-    //     });
+            // Staking preparation
+            approval = await token.connect(user1).approve(staking.address, tokens(30));
+            await approval.wait(); 
+            // 1. Stake 1
+            transaction = await staking.connect(user1).stake(tokens(10));
+            await transaction.wait();
+            // console.log('1',await staking.getParticipant(user1.address))
+            // 2. Wait 1 year
+            const oneYearAgo = (await ethers.provider.getBlock('latest')).timestamp - 365 * 24 * 60 * 60;
+            await staking.connect(deployer_owner).updateTimestamp(user1.address, oneYearAgo);
+            // console.log('2. Staked second time', await staking.calculateCurrentBalanceCompound(user1.address))
+            // 3. Stake 2
+            transaction = await staking.connect(user1).stake(tokens(10));
+            await transaction.wait();
+            // console.log('3',await staking.getParticipant(user1.address))
+            // 4. Wait 1 year again
+            await staking.connect(deployer_owner).updateTimestamp(user1.address, oneYearAgo);
+            // console.log('4. Staked second time', await staking.calculateCurrentBalanceCompound(user1.address))
+            // 5. Stake 3
+            transaction = await staking.connect(user1).stake(tokens(10));
+            // console.log('After stakes & waits before withdraw',await staking.getParticipant(user1.address))
+            // console.log('5',await staking.getParticipant(user1.address))
 
-    //     it('Should not withdraw when input is 0', async () => {
-    //         await expect(staking.connect(user1).withdraw(tokens(0))).to.be.revertedWith("Token amount must be greater than zero");
-    //     });
+            // Withdraw
+            transaction = await staking.connect(user1).withdraw(tokens(15));
+            await transaction.wait();
 
-    //     it('Should not withdraw when input is greater than balance', async () => {
-    //         await expect(staking.connect(user1).withdraw(tokens(21))).to.be.reverted;
-    //     });
-    // });
+            // console.log(await staking.getParticipant(user1.address))            
+            // console.log("Total Tokens Staked:", (await staking.totalTokensStaked()).toString());
+            // console.log("Total Treasury Tokens:", (await staking.totalTreasuryTokens()).toString());
+        
+            const participant = await staking.getParticipant(user1.address);
+            expect(participant.directStakeAmountSatoshi).to.equal(tokens(30));
+            expect(participant.rewardAmountSatoshi).to.be.closeTo(tokens(16), tokens(1));
+            expect(await token.balanceOf(user1.address)).to.equal(tokens(985));
+            expect(await token.balanceOf(staking.address)).to.be.closeTo(tokens(1015), tokens(1));
+            expect(await staking.totalTokensStaked()).to.equal(tokens(30));
+            expect(await staking.totalTreasuryTokens()).to.equal(tokens(985));
+        });
+    });
+
+    describe('Withdraw negative', async () => {
+        beforeEach(async () => {
+            let approval = await token.connect(user1).approve(staking.address, tokens(20));
+            await approval.wait();
+
+            let transaction = await staking.connect(user1).stake(tokens(20));
+            await transaction.wait();
+        });
+
+        it('Should not withdraw when input is 0', async () => {
+            await expect(staking.connect(user1).withdraw(tokens(0))).to.be.revertedWith("Token amount must be greater than zero");
+        });
+
+        it('Should not withdraw when input is greater than balance', async () => {
+            await expect(staking.connect(user1).withdraw(tokens(21))).to.be.reverted;
+        });
+    });
+
+    describe('Annual yield change', async () => {
+        it('Should change the annual yield', async () => {
+            // Prepare users and stakes
+            let approval = await token.connect(user1).approve(staking.address, tokens(30));
+            await approval.wait();
+            let transaction = await staking.connect(user1).stake(tokens(10));
+            await transaction.wait();
+            approval = await token.connect(user2).approve(staking.address, tokens(30));
+            await approval.wait();
+            transaction = await staking.connect(user2).stake(tokens(20));
+            await transaction.wait();
+            approval = await token.connect(user3).approve(staking.address, tokens(30));
+            await approval.wait();
+            transaction = await staking.connect(user3).stake(tokens(30));
+            await transaction.wait();
+
+            // Wait 1 year
+            const oneYearAgo = (await ethers.provider.getBlock('latest')).timestamp - 365 * 24 * 60 * 60;
+            await staking.connect(deployer_owner).updateTimestamp(user1.address, oneYearAgo);
+            await staking.connect(deployer_owner).updateTimestamp(user2.address, oneYearAgo);
+            await staking.connect(deployer_owner).updateTimestamp(user3.address, oneYearAgo);
+
+            // console.log(await staking.getParticipant(user1.address))
+            // console.log(await staking.getParticipant(user2.address))
+            // console.log(await staking.getParticipant(user3.address))
+
+            await staking.connect(deployer_owner).changeAnnualYield(40);
+
+            // console.log(await staking.getParticipant(user1.address))
+            // console.log(await staking.getParticipant(user2.address))
+            // console.log(await staking.getParticipant(user3.address))
+
+            expect(await staking.annualYield()).to.equal(40);
+        });
+
+        it('Should emit correct AnnualYieldChanged event', async () => {
+            let transaction = await staking.connect(deployer_owner).changeAnnualYield(75);
+            const receipt = await transaction.wait();
+            const logs = receipt.events;
+        
+            // Filter logs to get only AnnualYieldChanged events
+            const annualYieldChangedEventLogs = logs.filter(log => log.event === 'AnnualYieldChanged');
+        
+            // Ensure there is at least one AnnualYieldChanged event log
+            expect(annualYieldChangedEventLogs.length).to.be.greaterThan(0);
+        
+            // Check if the correct event name is present
+            expect(annualYieldChangedEventLogs.some(log => log.event === 'AnnualYieldChanged')).to.be.true;
+        
+            // Check if the event contains the correct new annual yield argument
+            expect(annualYieldChangedEventLogs.some(log => log.args && log.args.newAnnualYield.eq(75))).to.be.true;
+        })
+    });
 });
