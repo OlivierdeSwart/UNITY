@@ -7,6 +7,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Token.sol";
 import "hardhat/console.sol";
 
+// This smart contract contains a staking mechanism for the wBNRY token. 
+// Accumulated wBNRY in this smart contract will be used to spin up evo nodes on the BNRY network. 
+// For more information on the project, you can visit https://binarybit.pro/
+
 contract Staking is ReentrancyGuard, Pausable, Ownable {
     Token public token;
     uint256 public totalTokensStaked;
@@ -44,19 +48,19 @@ contract Staking is ReentrancyGuard, Pausable, Ownable {
     }
 
     // This function is just for testing purposes
-    function calculateCurrentBalanceLinear(address user) public view returns (uint256) {
-        Participant storage participant = customerMapping[user];
-        uint256 startTime = participant.latestActionTime;
-        uint256 initialAmount = participant.directStakeAmountSatoshi + participant.rewardAmountSatoshi;
+    // function calculateCurrentBalanceLinear(address user) public view returns (uint256) {
+    //     Participant storage participant = customerMapping[user];
+    //     uint256 startTime = participant.latestActionTime;
+    //     uint256 initialAmount = participant.directStakeAmountSatoshi + participant.rewardAmountSatoshi;
 
-        uint256 timeElapsed = block.timestamp - startTime;
-        uint256 ratePerSecond = (annualYield * PRECISION) / (100 * SECONDS_IN_YEAR);
+    //     uint256 timeElapsed = block.timestamp - startTime;
+    //     uint256 ratePerSecond = (annualYield * PRECISION) / (100 * SECONDS_IN_YEAR);
 
-        // Calculate linear interest with precision
-        uint256 accruedInterest = initialAmount * ratePerSecond * timeElapsed / PRECISION;
-        uint256 currentBalance = initialAmount + accruedInterest;
-        return currentBalance;
-    }
+    //     // Calculate linear interest with precision
+    //     uint256 accruedInterest = initialAmount * ratePerSecond * timeElapsed / PRECISION;
+    //     uint256 currentBalance = initialAmount + accruedInterest;
+    //     return currentBalance;
+    // }
 
     function calculateCurrentBalanceCompound(address user) public view returns (uint256) {
         Participant storage participant = customerMapping[user];
