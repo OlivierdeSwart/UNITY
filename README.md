@@ -1,20 +1,10 @@
-This video describes the project: https://www.loom.com/share/cdcb3458c158464badec48d843cdfef8
+This repo contains the smart contract and testing files for BinaryBit Staking
 
-# Ollie Token Crowdsale: Showcase Project #2
-This project introduces the crowdsale of the Ollie token, allowing participants to purchase the token with (Sepolia) Ether. The project's focus is on the development of smart contracts, undertaken independently. 
+More info on the BNRY project: https://binarybit.pro/
+Token bridge website: https://platform.binarybit.pro/
 
-## Functionality
-The smart contract is responsible for holding all funds during the crowdsale period. Should the crowdsale meet its sales goal, the Ollie token is distributed to contributors. If the crowdsale does not reach its goal, Ether contributions are returned to the contributors' wallets.
+BSC Testnet address of wBNRY token: 0x9E185f50424d4abF3a4Db2c6f0aA04e460c99EA8
+Link: https://testnet.bscscan.com/address/0x9e185f50424d4abf3a4db2c6f0aa04e460c99ea8#code
 
-## Technology Stack
-Technologies used include Solidity, JavaScript, Hardhat, React, npm, and node.js.
-
-## Resources
-- Live Deployment: Experience the project live here: [https://app.fleek.co/#/sites/hidden-cloud-9543/deploys/2023-08-18T10:29:48.944Z?accountId=61c76c33-e4e4-4e47-b060-86a13d616dc9](https://dry-bush-5180.on.fleek.co/)
-- Project Overview Video: A concise summary of the project is available via [video link to be inserted].
-
-## Core Technology - Smart Contracts
-Central to the project are two key smart contracts:
-
-- Token.sol: This contract creates the Ollie token.
-- Crowdsale.sol: This contract enables the core crowdsale functionality, allowing users to purchase the cryptocurrencies mentioned above.
+Current mainnet address of wBNRY token: 0x0a8c14AfeAb13e1eFD78CaC256F528d0448F57aF
+Link: https://bscscan.com/address/0x0a8c14AfeAb13e1eFD78CaC256F528d0448F57aF
