@@ -147,10 +147,10 @@ contract Staking is ReentrancyGuard, Pausable, Ownable {
     }
 
     // This function is just for testing purposes, needs to be removed in production
-    function updateTimestamp(address user, uint256 newTimestamp) public onlyOwner {
-        require(customerMapping[user].user != address(0), "User does not exist");
-        customerMapping[user].latestActionTime = newTimestamp;
-    }
+    // function updateTimestamp(address user, uint256 newTimestamp) public onlyOwner {
+    //     require(customerMapping[user].user != address(0), "User does not exist");
+    //     customerMapping[user].latestActionTime = newTimestamp;
+    // }
 
     function getParticipant(address _customer) public view returns (Participant memory) {
         Participant memory participant = customerMapping[_customer];
