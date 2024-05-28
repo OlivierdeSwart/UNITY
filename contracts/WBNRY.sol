@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract WrappedBNRY is ERC20, ReentrancyGuard, Pausable, Ownable {
+contract WBNRY is ERC20, ReentrancyGuard, Pausable, Ownable {
     uint256 public constant MAX_SUPPLY = 120000000 * 10**8; // 120 million tokens with 8 decimals
     uint8 private _decimals;
 
