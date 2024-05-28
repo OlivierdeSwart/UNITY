@@ -1,20 +1,17 @@
 const hre = require("hardhat");
 
 async function main() {
-  const NAME = 'Wrapped Binary Bit Token'
-  const SYMBOL = 'WBNRY'
-  const MAX_SUPPLY = '120000000'
+  const tokenAddress = process.env.TOKEN_ADDRESS; // Use environment variable for token address
 
-  const Token = await hre.ethers.getContractFactory('Token')
-  let token = await Token.deploy(NAME,SYMBOL,MAX_SUPPLY)
-  await token.deployed()
-  console.log(`Token deployed to: ${ token.address} \n`)
+  if (!tokenAddress) {
+    console.error("Please set the TOKEN_ADDRESS environment variable.");
+    process.exit(1);
+  }
 
-  const Crowdsale = await hre.ethers.getContractFactory('Staking')
-  let crowdsale = await Crowdsale.deploy(token.address)
-  await crowdsale.deployed()
-  console.log(`Crowdsale deployed to: ${ crowdsale.address} \n`)
-
+  const Staking = await hre.ethers.getContractFactory('Staking');
+  let staking = await Staking.deploy(tokenAddress);
+  await staking.deployed();
+  console.log(`Staking contract deployed to: ${staking.address}`);
 }
 
 main().catch((error) => {

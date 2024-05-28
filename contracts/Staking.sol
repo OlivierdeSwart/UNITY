@@ -4,20 +4,28 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./Token.sol";
-import "hardhat/console.sol";
+// import "./Token.sol";
+// import "hardhat/console.sol";
 
 // This smart contract contains a staking mechanism for the wBNRY token. 
 // Accumulated wBNRY in this smart contract will be used to spin up evo nodes on the BNRY network. 
 // For more information on the project, you can visit https://binarybit.pro/
 
+interface IToken {
+    function balanceOf(address account) external view returns (uint256);
+    function allowance(address owner, address spender) external view returns (uint256);
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+    function transfer(address recipient, uint256 amount) external returns (bool);
+    function approve(address spender, uint256 amount) external returns (bool);
+}
+
 contract Staking is ReentrancyGuard, Pausable, Ownable {
-    Token public token;
+    IToken public token;
     uint256 public totalTokensStaked;
     uint256 public totalTreasuryTokens;
     uint256 public annualYield;
 
-    uint256 public constant SECONDS_IN_YEAR = 365 * 24 * 60 * 60; //31 536 000
+    uint256 public constant SECONDS_IN_YEAR = 365 * 24 * 60 * 60; //31 536 000 seconds
     uint256 public constant PRECISION = 1e18;
 
     struct Participant {
@@ -35,7 +43,7 @@ contract Staking is ReentrancyGuard, Pausable, Ownable {
     address[] public customerAddressesArray;
     mapping(address => Participant) public customerMapping;
 
-    constructor(Token _token) {
+    constructor(IToken _token) {
         token = _token;
         totalTokensStaked = 0;
         totalTreasuryTokens = 0;
@@ -150,11 +158,11 @@ contract Staking is ReentrancyGuard, Pausable, Ownable {
         }
     }
 
-    // This function is just for testing purposes, needs to be removed in production
-    // function updateTimestamp(address user, uint256 newTimestamp) public onlyOwner {
-    //     require(customerMapping[user].user != address(0), "User does not exist");
-    //     customerMapping[user].latestActionTime = newTimestamp;
-    // }
+    // This function is just for testing purposes, needs to be disabled in production
+    function updateTimestamp(address user, uint256 newTimestamp) public onlyOwner {
+        require(customerMapping[user].user != address(0), "User does not exist");
+        customerMapping[user].latestActionTime = newTimestamp;
+    }
 
     function getParticipant(address _customer) public view returns (Participant memory) {
         Participant memory participant = customerMapping[_customer];
