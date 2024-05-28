@@ -6,11 +6,12 @@ const tokens = (n) => {
 }
 
 describe('Staking & Withdrawing', () => {
-    let staking, token, deployer_owner, user1, user2;
+    let staking, token, deployer_owner, user1, user2, user3;
+    
     beforeEach(async () => {
-        // Load and deploy Token contract
-        const Token = await ethers.getContractFactory('Token');
-        token = await Token.deploy('Wrapped Binary Bit Token', 'WBNRY', tokens(120000000));
+        // Load and deploy WBNRY contract
+        const WBNRY = await ethers.getContractFactory('WBNRY');
+        token = await WBNRY.deploy();
         await token.deployed();
 
         // Load and deploy Staking contract
@@ -21,7 +22,8 @@ describe('Staking & Withdrawing', () => {
         // Configure accounts
         [deployer_owner, user1, user2, user3] = await ethers.getSigners();
         
-        // Send tokens to user1 & 2
+        // Mint tokens to deployer_owner and transfer tokens to user1, user2, and user3
+        await token.connect(deployer_owner).mint(deployer_owner.address, tokens(10000)); // Mint to deployer_owner
         let transaction = await token.connect(deployer_owner).transfer(user1.address, tokens(1000));
         await transaction.wait();
         transaction = await token.connect(deployer_owner).transfer(user2.address, tokens(1000));
@@ -80,7 +82,7 @@ describe('Staking & Withdrawing', () => {
             expect(currentBalanceCompound).to.be.closeTo(tokens(18), tokens(1)); // Allow small deviation for testing
         });
 
-        it('Should calculate the right balance stake 10 wbnry, wait 1 year, iterate 3x', async () => {
+        it('Should calculate the right balance stake 10 token, wait 1 year, iterate 3x', async () => {
             
             // Staked in before each
             // console.log('1. Staked in before each', await staking.calculateCurrentBalanceCompound(user1.address))
@@ -138,7 +140,7 @@ describe('Staking & Withdrawing', () => {
             const logs = receipt.events;
         
             // Filter logs to get only Stake events
-            const stakeEventLogs = logs.filter(log => log.event === 'Stake');
+            let stakeEventLogs = logs.filter(log => log.event === 'Stake');
         
             // Ensure there is at least one Stake event log
             expect(stakeEventLogs.length).to.be.greaterThan(0);
