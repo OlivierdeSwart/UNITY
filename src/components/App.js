@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Container } from 'react-bootstrap';
+import { Container, Form, Button } from 'react-bootstrap';
 import { ethers } from 'ethers';
 
 // Components
 import Navigation from './Navigation';
 import Loading from './Loading';
-// import StakingForm from './StakingForm';
 
 // ABIs
 import WBNRY_ABI from '../abis/WBNRY.json';
@@ -33,66 +32,151 @@ function App() {
   const [account, setAccount] = useState(null);
   const [accountBalance, setAccountBalance] = useState(0);
 
+  const [stakeAmount, setStakeAmount] = useState('');
+  const [withdrawAmount, setWithdrawAmount] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
   const TARGET_NETWORK_ID = '31337'; // Hardhat network ID
 
   const loadDefaultData = async () => {
-    // Initiate default provider (Infura, Alchemy, etc.)
-    const defaultProvider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545');
-    setDefaultProvider(defaultProvider);
+    try {
+      // Initiate default provider
+      const defaultProvider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545');
+      setDefaultProvider(defaultProvider);
 
-    // Fetch Chain ID
-    const { chainId } = await defaultProvider.getNetwork();
+      // Fetch Chain ID
+      const { chainId } = await defaultProvider.getNetwork();
 
-    // Initiate contracts: uses ethers library to construct a smart contract abstraction. Combines chainid, provider (http://127.0.0.1:8545), 
-    // address, and ABI
-    const WBNRY = new ethers.Contract(config[chainId].WBNRY.address, WBNRY_ABI, defaultProvider);
-    const Staking = new ethers.Contract(config[chainId].Staking.address, STAKING_ABI, defaultProvider);
+      // Initiate contracts
+      const WBNRY = new ethers.Contract(config[chainId].WBNRY.address, WBNRY_ABI, defaultProvider);
+      const Staking = new ethers.Contract(config[chainId].Staking.address, STAKING_ABI, defaultProvider);
 
-    // Fetch contract information and update state
-    setWBNRYAddress(WBNRY.address);
-    setWBNRYName(await WBNRY.name());
-    setWBNRYSupply(ethers.utils.formatUnits(await WBNRY.totalSupply(), 8));
-    setStakingAddress(Staking.address);
-    setTotalStaked(ethers.utils.formatUnits(await Staking.totalTokensStaked(), 8));
-    setTotalStakers((await Staking.totalStakers()).toNumber());
-    setTotalTreasuryTokens((await Staking.totalTreasuryTokens()).toString());
-    setAnnualYield((await Staking.annualYield()).toString());
+      // Fetch contract information and update state
+      const wbnrySupply = await WBNRY.totalSupply();
+      const totalStaked = await Staking.totalTokensStaked();
+      const totalTreasuryTokens = await Staking.totalTreasuryTokens();
+      const annualYield = await Staking.annualYield();
 
-    // Set the contract instances to state
-    setStaking(Staking);
-    setWBNRY(WBNRY);
+      setWBNRYAddress(WBNRY.address);
+      setWBNRYName(await WBNRY.name());
+      setWBNRYSupply(wbnrySupply);
+      setStakingAddress(Staking.address);
+      setTotalStaked(totalStaked);
+      setTotalStakers((await Staking.totalStakers()).toNumber());
+      setTotalTreasuryTokens(totalTreasuryTokens);
+      setAnnualYield(annualYield.toString());
+
+      // Set the contract instances to state
+      setStaking(Staking);
+      setWBNRY(WBNRY);
+    } catch (error) {
+      console.error("Error loading default data:", error);
+    }
   };
 
   const loadUserData = async () => {
-    // Initiate provider
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    setProvider(provider);
+    try {
+      // Initiate provider
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      setProvider(provider);
 
-    // Fetch Chain ID
-    const { chainId } = await provider.getNetwork();
+      // Fetch Chain ID
+      const { chainId } = await provider.getNetwork();
 
-    if (chainId.toString() !== TARGET_NETWORK_ID) {
-      alert(`Please connect to the correct network. Current Network ID: ${chainId}, Required Network ID: ${TARGET_NETWORK_ID}`);
+      if (chainId.toString() !== TARGET_NETWORK_ID) {
+        alert(`Please connect to the correct network. Current Network ID: ${chainId}, Required Network ID: ${TARGET_NETWORK_ID}`);
+        setIsLoading(false);
+        return;
+      }
+
+      // Initiate contracts
+      const WBNRY = new ethers.Contract(config[chainId].WBNRY.address, WBNRY_ABI, provider);
+      const Staking = new ethers.Contract(config[chainId].Staking.address, STAKING_ABI, provider);
+      setStaking(Staking);
+      setWBNRY(WBNRY);
+
+      // Initiate accounts
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const account = ethers.utils.getAddress(accounts[0]);
+      setAccount(account);
+
+      // Fetch account balance
+      setAccountBalance(ethers.utils.formatUnits(await WBNRY.balanceOf(account), 8));
+
       setIsLoading(false);
-      return;
+    } catch (error) {
+      console.error("Error loading user data:", error);
+      setIsLoading(false);
     }
+  };
 
-    // Initiate contracts
-    const WBNRY = new ethers.Contract(config[chainId].WBNRY.address, WBNRY_ABI, provider);
-    const Staking = new ethers.Contract(config[chainId].Staking.address, STAKING_ABI, provider);
-    setStaking(Staking);
+  const handleStake = async (event) => {
+    event.preventDefault();
 
-    // Initiate accounts
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    const account = ethers.utils.getAddress(accounts[0]);
-    setAccount(account);
+    if (!staking || !wbnry || !account || !stakeAmount) return;
 
-    // Fetch account balance
-    setAccountBalance(ethers.utils.formatUnits(await WBNRY.balanceOf(account), 8));
+    try {
+      const amountToStake = ethers.utils.parseUnits(stakeAmount, 8); // Use user input
+      const userBalance = await wbnry.balanceOf(account);
 
-    setIsLoading(false);
+      if (userBalance.lt(amountToStake)) {
+        alert('Insufficient token balance');
+        return;
+      }
+
+      // Request approval to transfer tokens
+      const approvalTx = await wbnry.connect(provider.getSigner()).approve(staking.address, amountToStake);
+      await approvalTx.wait();
+
+      // Verify approval
+      const allowance = await wbnry.allowance(account, staking.address);
+      if (allowance.lt(amountToStake)) {
+        alert('Approval failed or insufficient approval amount');
+        return;
+      }
+
+      // Stake tokens
+      const stakeTx = await staking.connect(provider.getSigner()).stake(amountToStake);
+      await stakeTx.wait();
+
+      alert("Staking successful!");
+
+      // Reload variables
+      await loadDefaultData();
+      await loadUserData();
+
+      // Clear the form
+      setStakeAmount('');
+    } catch (error) {
+      console.error("Staking failed:", error);
+      alert("Staking failed! Check the console for more details.");
+    }
+  };
+
+  const handleWithdraw = async (event) => {
+    event.preventDefault();
+
+    if (!staking || !account || !withdrawAmount) return;
+
+    try {
+      const amountToWithdraw = ethers.utils.parseUnits(withdrawAmount, 8); // Use user input
+
+      // Withdraw tokens
+      const withdrawTx = await staking.connect(provider.getSigner()).withdraw(amountToWithdraw);
+      await withdrawTx.wait();
+
+      alert("Withdrawal successful!");
+
+      // Reload variables
+      await loadDefaultData();
+      await loadUserData();
+
+      // Clear the form
+      setWithdrawAmount('');
+    } catch (error) {
+      console.error("Withdrawal failed:", error);
+      alert("Withdrawal failed! Check the console for more details.");
+    }
   };
 
   useEffect(() => {
@@ -126,11 +210,11 @@ function App() {
       <section>
         <h2>Staking Information</h2>
         <p>WBNRY Smart Contract Address: {wbnryAddress}</p>
-        <p>WBNRY Total Circulation: {wbnrySupply}</p>
+        <p>WBNRY Total Circulation: {wbnrySupply !== null && wbnrySupply !== undefined ? Number(ethers.utils.formatUnits(wbnrySupply, 8)).toFixed(1) : 'Loading...'}</p>
         <p>Staking Address: {stakingAddress}</p>
-        <p>Total Staked: {totalStaked}</p>
-        <p>WBNRY Total Stakers: {totalStakers}</p>
-        <p>Total Treasury Tokens: {totalTreasuryTokens}</p>
+        <p>Total Staked: {totalStaked !== null && totalStaked !== undefined ? Number(ethers.utils.formatUnits(totalStaked, 8)).toFixed(1) : 'Loading...'}</p>
+        <p>Total Stakers: {totalStakers}</p>
+        <p>Total Treasury Tokens: {totalTreasuryTokens !== null && totalTreasuryTokens !== undefined ? Number(ethers.utils.formatUnits(totalTreasuryTokens, 8)).toFixed(1) : 'Loading...'}</p>
         <p>Annual Yield: {annualYield}%</p>
       </section>
 
@@ -143,6 +227,38 @@ function App() {
           <h2>User Information</h2>
           <p><strong>Current account address: </strong>{account}</p>
           <p><strong>WBNRY Owned: </strong>{accountBalance}</p>
+          {account && (
+            <>
+              <Form onSubmit={handleStake}>
+                <Form.Group controlId="stakeAmount">
+                  <Form.Label>Amount to Stake</Form.Label>
+                  <Form.Control
+                    type="number"
+                    value={stakeAmount}
+                    onChange={(e) => setStakeAmount(e.target.value)}
+                    placeholder="Enter amount to stake"
+                  />
+                </Form.Group>
+                <Button variant="primary" type="submit">
+                  Stake WBNRY
+                </Button>
+              </Form>
+              <Form onSubmit={handleWithdraw}>
+                <Form.Group controlId="withdrawAmount" className="mt-3">
+                  <Form.Label>Amount to Withdraw</Form.Label>
+                  <Form.Control
+                    type="number"
+                    value={withdrawAmount}
+                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                    placeholder="Enter amount to withdraw"
+                  />
+                </Form.Group>
+                <Button variant="primary" type="submit">
+                  Withdraw WBNRY
+                </Button>
+              </Form>
+            </>
+          )}
         </>
       )}
     </Container>
