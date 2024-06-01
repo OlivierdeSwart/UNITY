@@ -1,120 +1,149 @@
 import { useEffect, useState } from 'react';
 import { Container } from 'react-bootstrap';
 import { ethers } from 'ethers';
-import BigNumber from 'bignumber.js';
 
 // Components
 import Navigation from './Navigation';
-import Info from './Info';
 import Loading from './Loading';
-import Progress from './Progress';
-import Buy from './Buy';
+// import StakingForm from './StakingForm';
 
 // ABIs
-import TOKEN_ABI from '../abis/Token.json'
-import CROWDSALE_ABI from '../abis/Crowdsale.json'
+import WBNRY_ABI from '../abis/WBNRY.json';
+import STAKING_ABI from '../abis/Staking.json';
 
 // Config
 import config from '../config.json';
 
 function App() {
-  const [provider, setProvider] = useState(null)
-  const [crowdsale, setCrowdsale] = useState(null)
+  const [defaultProvider, setDefaultProvider] = useState(null);
+  const [provider, setProvider] = useState(null);
+  const [staking, setStaking] = useState(null);
+  const [wbnry, setWBNRY] = useState(null);
 
-  const [account, setAccount] = useState(null)
-  const [accountBalance, setAccountBalance] = useState(0)
+  // State variables for contract data
+  const [wbnryAddress, setWBNRYAddress] = useState(null);
+  const [wbnryName, setWBNRYName] = useState(null);
+  const [wbnrySupply, setWBNRYSupply] = useState(null);
+  const [stakingAddress, setStakingAddress] = useState(null);
+  const [totalStaked, setTotalStaked] = useState(null);
+  const [totalStakers, setTotalStakers] = useState(null);
+  const [totalTreasuryTokens, setTotalTreasuryTokens] = useState(null);
+  const [annualYield, setAnnualYield] = useState(null);
 
+  const [account, setAccount] = useState(null);
+  const [accountBalance, setAccountBalance] = useState(0);
 
-  const [price, setPrice] = useState(0)
-  const [maxTokens, setMaxTokens] = useState(0)
-  const [tokensSold, setTokensSold] = useState(0)
-  const [userTokenAmountWei, setUserTokenAmountWei] = useState(0)
-  const [icoStart, setIcoStart] = useState(0)
-  const [icoEnd, setIcoEnd] = useState(0)
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [isLoading, setIsLoading] = useState(true)
+  const TARGET_NETWORK_ID = '31337'; // Hardhat network ID
 
-  const loadBlockchainData = async () => {
-    //initiate provider
-    const provider = new ethers.providers.Web3Provider(window.ethereum)
-    setProvider(provider)
+  const loadDefaultData = async () => {
+    // Initiate default provider (Infura, Alchemy, etc.)
+    const defaultProvider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545');
+    setDefaultProvider(defaultProvider);
 
     // Fetch Chain ID
-    const { chainId } = await provider.getNetwork()
+    const { chainId } = await defaultProvider.getNetwork();
 
-    // console.log('test')
-    // console.log(provider)
-    // console.log(chainId)
-    // console.log([config[chainId].token.address])
-    // console.log([provider])
+    // Initiate contracts: uses ethers library to construct a smart contract abstraction. Combines chainid, provider (http://127.0.0.1:8545), 
+    // address, and ABI
+    const WBNRY = new ethers.Contract(config[chainId].WBNRY.address, WBNRY_ABI, defaultProvider);
+    const Staking = new ethers.Contract(config[chainId].Staking.address, STAKING_ABI, defaultProvider);
 
-    //initiate contracts
-    const token = new ethers.Contract(config[chainId].token.address,TOKEN_ABI,provider)
-    const crowdsale = new ethers.Contract(config[chainId].crowdsale.address,CROWDSALE_ABI,provider)
-    setCrowdsale(crowdsale)
+    // Fetch contract information and update state
+    setWBNRYAddress(WBNRY.address);
+    setWBNRYName(await WBNRY.name());
+    setWBNRYSupply(ethers.utils.formatUnits(await WBNRY.totalSupply(), 8));
+    setStakingAddress(Staking.address);
+    setTotalStaked(ethers.utils.formatUnits(await Staking.totalTokensStaked(), 8));
+    setTotalStakers((await Staking.totalStakers()).toNumber());
+    setTotalTreasuryTokens((await Staking.totalTreasuryTokens()).toString());
+    setAnnualYield((await Staking.annualYield()).toString());
 
-    //initiate accounts
+    // Set the contract instances to state
+    setStaking(Staking);
+    setWBNRY(WBNRY);
+  };
+
+  const loadUserData = async () => {
+    // Initiate provider
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    setProvider(provider);
+
+    // Fetch Chain ID
+    const { chainId } = await provider.getNetwork();
+
+    if (chainId.toString() !== TARGET_NETWORK_ID) {
+      alert(`Please connect to the correct network. Current Network ID: ${chainId}, Required Network ID: ${TARGET_NETWORK_ID}`);
+      setIsLoading(false);
+      return;
+    }
+
+    // Initiate contracts
+    const WBNRY = new ethers.Contract(config[chainId].WBNRY.address, WBNRY_ABI, provider);
+    const Staking = new ethers.Contract(config[chainId].Staking.address, STAKING_ABI, provider);
+    setStaking(Staking);
+
+    // Initiate accounts
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    const account = ethers.utils.getAddress(accounts[0])
-    setAccount(account)
+    const account = ethers.utils.getAddress(accounts[0]);
+    setAccount(account);
 
-    //fetch account balance
-    const accountBalance = ethers.utils.formatUnits(await token.balanceOf(account), 18)
-        setAccountBalance(accountBalance)
+    // Fetch account balance
+    setAccountBalance(ethers.utils.formatUnits(await WBNRY.balanceOf(account), 8));
 
-    const price = ethers.utils.formatUnits(await crowdsale.price(), 18)
-    setPrice(price)
-    const maxTokens = ethers.utils.formatUnits(await crowdsale.maxTokens(), 18)
-    setMaxTokens(maxTokens)
-    const tokensSold = ethers.utils.formatUnits(await crowdsale.tokensSold(), 18)
-    setTokensSold(tokensSold)
-    let contribution = await crowdsale.contributions(account)
-    let userTokenAmountWei = ethers.utils.formatUnits(contribution.tokenAmountWei, 18)
-    setUserTokenAmountWei(userTokenAmountWei)
+    setIsLoading(false);
+  };
 
-    const icoStartValue = await crowdsale.icoStart();
-    const icoStartMilliseconds = new BigNumber(icoStartValue.toString()).multipliedBy(1000).toNumber();
-    const icoStart = new Date(icoStartMilliseconds);
-    const icoStartString = icoStart.toLocaleString();
-    setIcoStart(icoStartString);
+  useEffect(() => {
+    const init = async () => {
+      await loadDefaultData();
+      if (window.ethereum) {
+        window.ethereum.on('chainChanged', () => {
+          setIsLoading(true);
+        });
+        window.ethereum.on('accountsChanged', () => {
+          setIsLoading(true);
+        });
+      }
+      setIsLoading(false);
+    };
 
-    const icoEndValue = await crowdsale.icoEnd();
-    const icoEndMilliseconds = new BigNumber(icoEndValue.toString()).multipliedBy(1000).toNumber();
-    const icoEnd = new Date(icoEndMilliseconds);
-    const icoEndString = icoEnd.toLocaleString();
-    setIcoEnd(icoEndString);
-
-
-
-    setIsLoading(false)
-  }
+    init();
+  }, []);
 
   useEffect(() => {
     if (isLoading) {
-      loadBlockchainData()
+      loadUserData();
     }
-  }, [isLoading])
+  }, [isLoading]);
 
   return (
     <Container>
       <Navigation />
+      <h1 className='my-4 text-center'>Introducing WBNRY Staking!</h1>
 
-      <h1 className='my-4 text-center'>Introducing Ollie Token!</h1>
+      <section>
+        <h2>Staking Information</h2>
+        <p>WBNRY Smart Contract Address: {wbnryAddress}</p>
+        <p>WBNRY Total Circulation: {wbnrySupply}</p>
+        <p>Staking Address: {stakingAddress}</p>
+        <p>Total Staked: {totalStaked}</p>
+        <p>WBNRY Total Stakers: {totalStakers}</p>
+        <p>Total Treasury Tokens: {totalTreasuryTokens}</p>
+        <p>Annual Yield: {annualYield}%</p>
+      </section>
+
+      <hr /> {/* Line break to separate contract information and user information */}
 
       {isLoading ? (
         <Loading />
       ) : (
         <>
-          <p className='text-center'><strong>Current Price:</strong> {price} ETH</p>
-          <Progress maxTokens={maxTokens} tokensSold={tokensSold} />
-          <Buy provider={provider} price={price} crowdsale={crowdsale} setIsLoading={setIsLoading} />
+          <h2>User Information</h2>
+          <p><strong>Current account address: </strong>{account}</p>
+          <p><strong>WBNRY Owned: </strong>{accountBalance}</p>
         </>
-      )}
-
-      <hr />
-
-      {account && (
-        <Info account={account} userTokenAmountWei={userTokenAmountWei} icoStart={icoStart} icoEnd={icoEnd} />
       )}
     </Container>
   );

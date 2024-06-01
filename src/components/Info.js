@@ -1,12 +1,10 @@
-const Info = ({ account, userTokenAmountWei, icoStart, icoEnd }) => {
-	return(
-		<div>
-			<p><strong>Account: </strong>{account}</p>
-			<p><strong>Tokens Owned: </strong>{userTokenAmountWei}</p>
-			<p><strong>ICO Start Date: </strong>{icoStart}</p>
-			<p><strong>ICO End Date: </strong>{icoEnd}</p>
-		</div>
-	)
-}
+// const Info = ({ account, userTokenAmountWei}) => {
+// 	return(
+// 		<div>
+// 			<p><strong>Current account address: </strong>{account}</p>
+// 			<p><strong>WBNRY Owned: </strong>{userTokenAmountWei}</p>
+// 		</div>
+// 	)
+// }
 
-export default Info;
+// export default Info;

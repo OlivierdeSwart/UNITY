@@ -22,6 +22,7 @@ interface IToken {
 contract Staking is ReentrancyGuard, Pausable, Ownable {
     IToken public token;
     uint256 public totalTokensStaked;
+    uint256 public totalStakers;
     uint256 public totalTreasuryTokens;
     uint256 public annualYield;
 
@@ -46,6 +47,7 @@ contract Staking is ReentrancyGuard, Pausable, Ownable {
     constructor(IToken _token) {
         token = _token;
         totalTokensStaked = 0;
+        totalStakers = 0;
         totalTreasuryTokens = 0;
         annualYield = 60; // 60% annual yield
     }
@@ -106,6 +108,7 @@ contract Staking is ReentrancyGuard, Pausable, Ownable {
 
         if (customerMapping[msg.sender].user == address(0)) {
             customerAddressesArray.push(msg.sender);
+            totalStakers += 1;
         }
 
         participant.user = msg.sender;
@@ -159,10 +162,10 @@ contract Staking is ReentrancyGuard, Pausable, Ownable {
     }
 
     // This function is just for testing purposes, needs to be disabled in production
-    function updateTimestamp(address user, uint256 newTimestamp) public onlyOwner {
-        require(customerMapping[user].user != address(0), "User does not exist");
-        customerMapping[user].latestActionTime = newTimestamp;
-    }
+    // function updateTimestamp(address user, uint256 newTimestamp) public onlyOwner {
+    //     require(customerMapping[user].user != address(0), "User does not exist");
+    //     customerMapping[user].latestActionTime = newTimestamp;
+    // }
 
     function getParticipant(address _customer) public view returns (Participant memory) {
         Participant memory participant = customerMapping[_customer];

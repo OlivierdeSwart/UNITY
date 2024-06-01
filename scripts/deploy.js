@@ -1,8 +1,12 @@
 const hre = require("hardhat");
 
 async function main() {
+  // Get the signer (deployer) address
+  const [deployer] = await hre.ethers.getSigners();
+  console.log(`Deploying contracts with the account: ${deployer.address}`);
+
   // Deploy the WrappedBNRY token
-  const WrappedBNRY = await hre.ethers.getContractFactory('WrappedBNRY');
+  const WrappedBNRY = await hre.ethers.getContractFactory('WBNRY');
   const wrappedBNRY = await WrappedBNRY.deploy();
   await wrappedBNRY.deployed();
   console.log(`WrappedBNRY token deployed to: ${wrappedBNRY.address}`);
