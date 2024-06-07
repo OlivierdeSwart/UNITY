@@ -31,6 +31,7 @@ function App() {
 
   const [account, setAccount] = useState(null);
   const [accountBalance, setAccountBalance] = useState(0);
+  const [directStakeAmountSatoshi, setDirectStakeAmountSatoshi] = useState(0);
 
   const [stakeAmount, setStakeAmount] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
@@ -99,9 +100,14 @@ function App() {
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       const account = ethers.utils.getAddress(accounts[0]);
       setAccount(account);
+      
+      const participant = await Staking.getParticipant(account.address);
+      const directStakeAmountSatoshi = participant.directStakeAmountSatoshi;
+      setDirectStakeAmountSatoshi(directStakeAmountSatoshi);
 
       // Fetch account balance
       setAccountBalance(ethers.utils.formatUnits(await WBNRY.balanceOf(account), 8));
+
 
       setIsLoading(false);
     } catch (error) {
@@ -227,6 +233,7 @@ function App() {
           <h2>User Information</h2>
           <p><strong>Current account address: </strong>{account}</p>
           <p><strong>WBNRY Owned: </strong>{accountBalance}</p>
+          <p><strong>WBNRY Staked: </strong>{directStakeAmountSatoshi}</p>
           {account && (
             <>
               <Form onSubmit={handleStake}>

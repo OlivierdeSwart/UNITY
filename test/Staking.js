@@ -82,38 +82,65 @@ describe('Staking & Withdrawing', () => {
             expect(currentBalanceCompound).to.be.closeTo(tokens(18), tokens(1)); // Allow small deviation for testing
         });
 
+        it('Stake once wait 3 years in 1 year increments', async () => {
+            // Stake initially
+            // await staking.connect(user1).stake(tokens(10));
+            console.log('1. Initial stake', Number((await staking.calculateCurrentBalanceCompound(user1.address)).toString()).toLocaleString('en-US'));
+        
+            // Wait 1 year
+            let oneYearLater = (await ethers.provider.getBlock('latest')).timestamp + 365 * 24 * 60 * 60;
+            await ethers.provider.send('evm_setNextBlockTimestamp', [oneYearLater]);
+            await ethers.provider.send('evm_mine');
+            console.log('2. After 1 year', Number((await staking.calculateCurrentBalanceCompound(user1.address)).toString()).toLocaleString('en-US'));
+        
+            // Wait another year
+            oneYearLater += 365 * 24 * 60 * 60;
+            await ethers.provider.send('evm_setNextBlockTimestamp', [oneYearLater]);
+            await ethers.provider.send('evm_mine');
+            console.log('3. After 2 years', Number((await staking.calculateCurrentBalanceCompound(user1.address)).toString()).toLocaleString('en-US'));
+        
+            // Wait another year
+            oneYearLater += 365 * 24 * 60 * 60;
+            await ethers.provider.send('evm_setNextBlockTimestamp', [oneYearLater]);
+            await ethers.provider.send('evm_mine');
+            console.log('4. After 3 years', Number((await staking.calculateCurrentBalanceCompound(user1.address)).toString()).toLocaleString('en-US'));
+        
+            expect(await staking.calculateCurrentBalanceCompound(user1.address)).to.be.above(tokens(10));
+        });
+        
+
         it('Should calculate the right balance stake 10 token, wait 1 year, iterate 3x', async () => {
             
             // Staked in before each
-            // console.log('1. Staked in before each', await staking.calculateCurrentBalanceCompound(user1.address))
+            console.log('1. Staked in before each', Number((await staking.calculateCurrentBalanceCompound(user1.address)).toString()).toLocaleString('en-US'));
             // console.log('1. Participant struct', await staking.getParticipant(user1.address))
             
             // Wait 1 year
             const oneYearAgo = (await ethers.provider.getBlock('latest')).timestamp - 365 * 24 * 60 * 60;
             await staking.connect(deployer_owner).updateTimestamp(user1.address, oneYearAgo);
             // console.log('2. Participant struct', await staking.getParticipant(user1.address))
-            // console.log('2. Wait 1 year', await staking.calculateCurrentBalanceCompound(user1.address))
+            console.log('2. Wait 1 year', Number((await staking.calculateCurrentBalanceCompound(user1.address)).toString()).toLocaleString('en-US'));
 
             // Stake again
             let transaction = await staking.connect(user1).stake(tokens(10));
             await transaction.wait();
-            // console.log('3. Staked second time', await staking.calculateCurrentBalanceCompound(user1.address)) // should be 18 + 10 = 28. Not 20
+            console.log('3. Staked second time', Number((await staking.calculateCurrentBalanceCompound(user1.address)).toString()).toLocaleString('en-US')); // should be 18 + 10 = 28. Not 20
             // console.log('3. Participant struct', await staking.getParticipant(user1.address))
             
             // Wait 1 year again
             await staking.connect(deployer_owner).updateTimestamp(user1.address, oneYearAgo);
-            // console.log('4. Wait 1 year again', await staking.calculateCurrentBalanceCompound(user1.address))
+            console.log('4. Wait 1 year again', Number((await staking.calculateCurrentBalanceCompound(user1.address)).toString()).toLocaleString('en-US'));
             expect(await staking.calculateCurrentBalanceCompound(user1.address)).to.be.above(tokens(30));
 
             // Stake again
             transaction = await staking.connect(user1).stake(tokens(10));
             await transaction.wait();
-            // console.log('5. Staked second time', await staking.calculateCurrentBalanceCompound(user1.address)) // should be 18 + 10 = 28. Not 20
+            console.log('5. Staked second time', Number((await staking.calculateCurrentBalanceCompound(user1.address)).toString()).toLocaleString('en-US')); // should be 18 + 10 = 28. Not 20
             // console.log('5. Participant struct', await staking.getParticipant(user1.address))
             
             // Wait 1 year again
             await staking.connect(deployer_owner).updateTimestamp(user1.address, oneYearAgo);
-            // console.log('6. Wait 1 year again', await staking.calculateCurrentBalanceCompound(user1.address))
+            console.log('6. Wait 1 year again', Number((await staking.calculateCurrentBalanceCompound(user1.address)).toString()).toLocaleString('en-US'));
             // console.log('6. Participant struct', await staking.getParticipant(user1.address))
             expect(await staking.calculateCurrentBalanceCompound(user1.address)).to.be.above(tokens(30));
 
@@ -421,7 +448,7 @@ describe('Staking & Withdrawing', () => {
     });
 
     describe('Complex withdrawal positive', async () => {
-        it('Should withdraw correctly when withdraw_amount > accrued rewards. Check contract treasury & total stake too', async () => {
+        it('Should withdraw correctly when withdraw_amount < accrued rewards. Check contract treasury & total stake too', async () => {
             // Fund treasury
             let approval = await token.connect(deployer_owner).approve(staking.address, tokens(1000));
             await approval.wait();
@@ -434,34 +461,51 @@ describe('Staking & Withdrawing', () => {
             // 1. Stake 1
             transaction = await staking.connect(user1).stake(tokens(10));
             await transaction.wait();
-            // console.log('1',await staking.getParticipant(user1.address))
+            console.log('1. t0 Staked 10 at t0', Number((await staking.calculateCurrentBalanceCompound(user1.address)).toString()).toLocaleString('en-US'));
             // 2. Wait 1 year
             const oneYearAgo = (await ethers.provider.getBlock('latest')).timestamp - 365 * 24 * 60 * 60;
             await staking.connect(deployer_owner).updateTimestamp(user1.address, oneYearAgo);
-            // console.log('2. Staked second time', await staking.calculateCurrentBalanceCompound(user1.address))
+            console.log('2. t1 Waited 1 year', Number((await staking.calculateCurrentBalanceCompound(user1.address)).toString()).toLocaleString('en-US'));
             // 3. Stake 2
             transaction = await staking.connect(user1).stake(tokens(10));
             await transaction.wait();
-            // console.log('3',await staking.getParticipant(user1.address))
+            console.log('3. t1 Staked 10 more at t1', Number((await staking.calculateCurrentBalanceCompound(user1.address)).toString()).toLocaleString('en-US'));
             // 4. Wait 1 year again
             await staking.connect(deployer_owner).updateTimestamp(user1.address, oneYearAgo);
-            // console.log('4. Staked second time', await staking.calculateCurrentBalanceCompound(user1.address))
+            console.log('4. t2 Waited 1 year', Number((await staking.calculateCurrentBalanceCompound(user1.address)).toString()).toLocaleString('en-US'));
             // 5. Stake 3
             transaction = await staking.connect(user1).stake(tokens(10));
             // console.log('After stakes & waits before withdraw',await staking.getParticipant(user1.address))
-            // console.log('5',await staking.getParticipant(user1.address))
+            console.log('5. t2 Stake 10 more at t2', Number((await staking.calculateCurrentBalanceCompound(user1.address)).toString()).toLocaleString('en-US'));
+            
+
+            let participant1 = await staking.getParticipant(user1.address);
+
+            console.log('5. Participant Address:', participant1.user);
+            console.log('5. directStakeAmountSatoshi:', Number(participant1.directStakeAmountSatoshi.toString()).toLocaleString('en-US'));
+            console.log('5. rewardAmountSatoshi:', Number(participant1.rewardAmountSatoshi.toString()).toLocaleString('en-US'));
+            console.log('5. latestActionTime:', Number(participant1.latestActionTime.toString()).toLocaleString('en-US'));
 
             // Withdraw
             transaction = await staking.connect(user1).withdraw(tokens(15));
             await transaction.wait();
 
-            // console.log(await staking.getParticipant(user1.address))            
+            // console.log('6. t3 Withdraw 15', Number((await staking.calculateCurrentBalanceCompound(user1.address)).toString()).toLocaleString('en-US'));
+
+            // console.log('6. t3 Withdraw 15', await staking.getParticipant(user1.address))
+
+            let participant2 = await staking.getParticipant(user1.address);
+
+            console.log('6. t3 CCBC after withdraw', Number((await staking.calculateCurrentBalanceCompound(user1.address)).toString()).toLocaleString('en-US'));
+            console.log('6. t3 Withdraw 15 Participant Address:', participant2.user);
+            console.log('6. t3 Withdraw 15 directStakeAmountSatoshi:', Number(participant2.directStakeAmountSatoshi.toString()).toLocaleString('en-US'));
+            console.log('6. t3 Withdraw 15 rewardAmountSatoshi:', Number(participant2.rewardAmountSatoshi.toString()).toLocaleString('en-US'));
+            console.log('6. t3 Withdraw 15 latestActionTime:', Number(participant2.latestActionTime.toString()).toLocaleString('en-US'));
             // console.log("Total Tokens Staked:", (await staking.totalTokensStaked()).toString());
             // console.log("Total Treasury Tokens:", (await staking.totalTreasuryTokens()).toString());
         
-            const participant = await staking.getParticipant(user1.address);
-            expect(participant.directStakeAmountSatoshi).to.equal(tokens(30));
-            expect(participant.rewardAmountSatoshi).to.be.closeTo(tokens(16), tokens(1));
+            expect(participant2.directStakeAmountSatoshi).to.equal(tokens(30));
+            expect(participant2.rewardAmountSatoshi).to.be.closeTo(tokens(16), tokens(1));
             expect(await token.balanceOf(user1.address)).to.equal(tokens(985));
             expect(await token.balanceOf(staking.address)).to.be.closeTo(tokens(1015), tokens(1));
             expect(await staking.totalTokensStaked()).to.equal(tokens(30));
