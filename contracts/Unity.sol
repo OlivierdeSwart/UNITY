@@ -37,29 +37,29 @@ contract UNITY is ReentrancyGuard, Pausable, Ownable {
         _;
     }
 
-    function startNewLoan() public whenNoCurrentLoanActive(msg.sender) nonReentrant {
-        uint256 flatLoanAmountWei = 10 * 10**18; // 10 ETH expressed in wei
+function startNewLoan(uint256 loanAmountWei) public whenNoCurrentLoanActive(msg.sender) nonReentrant {
+    require(loanAmountWei > 0, "Loan amount must be greater than 0");
 
-        // Logic to start a new loan
-        Participant storage participant = customerMapping[msg.sender];
-        participant.loanStart = block.timestamp;
-        participant.loanAmountWei = flatLoanAmountWei;
-        participant.currentLoanActive = true;
-        
-        // Update global stats
-        totalTokensLended += flatLoanAmountWei;
-        totalBorrowers += 1;
-        
-        // Add user to customer addresses array if not already present
-        if (participant.user == address(0)) {
-            participant.user = msg.sender;
-            customerAddressesArray.push(msg.sender);
-        }
-
-        // Transfer the loan amount to the borrower
-        (bool success, ) = msg.sender.call{value: flatLoanAmountWei}("");
-        require(success, "Transfer failed.");
+    // Logic to start a new loan
+    Participant storage participant = customerMapping[msg.sender];
+    participant.loanStart = block.timestamp;
+    participant.loanAmountWei = loanAmountWei;
+    participant.currentLoanActive = true;
+    
+    // Update global stats
+    totalTokensLended += loanAmountWei;
+    totalBorrowers += 1;
+    
+    // Add user to customer addresses array if not already present
+    if (participant.user == address(0)) {
+        participant.user = msg.sender;
+        customerAddressesArray.push(msg.sender);
     }
+
+    // Transfer the loan amount to the borrower
+    (bool success, ) = msg.sender.call{value: loanAmountWei}("");
+    require(success, "Transfer failed.");
+}
 
 
 
