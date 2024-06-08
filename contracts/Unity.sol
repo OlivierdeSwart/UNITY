@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract UNITY is ReentrancyGuard, Pausable, Ownable {
+contract Unity is ReentrancyGuard, Pausable, Ownable {
     uint256 public totalTokensLended;
     uint256 public totalBorrowers;
     uint256 public totalTreasuryTokens;
@@ -37,29 +37,31 @@ contract UNITY is ReentrancyGuard, Pausable, Ownable {
         _;
     }
 
-function startNewLoan(uint256 loanAmountWei) public whenNoCurrentLoanActive(msg.sender) nonReentrant {
-    require(loanAmountWei > 0, "Loan amount must be greater than 0");
+    receive() external payable {}
 
-    // Logic to start a new loan
-    Participant storage participant = customerMapping[msg.sender];
-    participant.loanStart = block.timestamp;
-    participant.loanAmountWei = loanAmountWei;
-    participant.currentLoanActive = true;
-    
-    // Update global stats
-    totalTokensLended += loanAmountWei;
-    totalBorrowers += 1;
-    
-    // Add user to customer addresses array if not already present
-    if (participant.user == address(0)) {
-        participant.user = msg.sender;
-        customerAddressesArray.push(msg.sender);
+    function startNewLoan() public whenNoCurrentLoanActive(msg.sender) nonReentrant {
+        uint256 flatLoanAmountWei = 10 * 10**18; // 10 ETH expressed in wei
+
+        // Logic to start a new loan
+        Participant storage participant = customerMapping[msg.sender];
+        participant.loanStart = block.timestamp;
+        participant.loanAmountWei = flatLoanAmountWei;
+        participant.currentLoanActive = true;
+        
+        // Update global stats
+        totalTokensLended += flatLoanAmountWei;
+        totalBorrowers += 1;
+        
+        // Add user to customer addresses array if not already present
+        if (participant.user == address(0)) {
+            participant.user = msg.sender;
+            customerAddressesArray.push(msg.sender);
+        }
+
+        // Transfer the loan amount to the borrower
+        (bool success, ) = msg.sender.call{value: flatLoanAmountWei}("");
+        require(success, "Transfer failed.");
     }
-
-    // Transfer the loan amount to the borrower
-    (bool success, ) = msg.sender.call{value: loanAmountWei}("");
-    require(success, "Transfer failed.");
-}
 
 
 
