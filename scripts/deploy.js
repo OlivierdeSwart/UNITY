@@ -5,17 +5,11 @@ async function main() {
   const [deployer] = await hre.ethers.getSigners();
   console.log(`Deploying contracts with the account: ${deployer.address}`);
 
-  // Deploy the WrappedBNRY token
-  const WrappedBNRY = await hre.ethers.getContractFactory('WBNRY');
-  const wrappedBNRY = await WrappedBNRY.deploy();
-  await wrappedBNRY.deployed();
-  console.log(`WrappedBNRY token deployed to: ${wrappedBNRY.address}`);
-
-  // Deploy the Staking contract with the WrappedBNRY token address
-  const Staking = await hre.ethers.getContractFactory('Staking');
-  const staking = await Staking.deploy(wrappedBNRY.address);
-  await staking.deployed();
-  console.log(`Staking contract deployed to: ${staking.address}`);
+  // Deploy the UNITY contract
+  const UNITY = await hre.ethers.getContractFactory('UNITY');
+  const unity = await UNITY.deploy();
+  await unity.deployed();
+  console.log(`UNITY contract deployed to: ${unity.address}`);
 }
 
 main().catch((error) => {
