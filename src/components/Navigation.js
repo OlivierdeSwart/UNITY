@@ -14,11 +14,10 @@ const Navigation = () => {
                     height="40"
                     className="inline-block mx-3"
                 />
-                <a href="#" className="text-2xl font-bold text-white">BinaryBit Staking</a>
+                <a href="#" className="text-2xl font-bold text-white">Unity</a>
             </div>
             <div className="flex space-x-4">
-                <Button text="Login" />
-                <Button text="Signup" />
+                <Button text="Connect to Wallet" />
             </div>
         </nav>
     );

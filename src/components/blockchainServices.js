@@ -25,7 +25,7 @@ export const loadDefaultData = async (setDefaultProvider, setUnity, setTotalToke
   }
 };
 
-export const loadUserData = async (setProvider, setAccount, setIsLoading) => {
+export const loadUserData = async (setProvider, setAccount, setIsLoading, unity, setLoanAmountWei) => {
   try {
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     setProvider(provider);
@@ -41,6 +41,14 @@ export const loadUserData = async (setProvider, setAccount, setIsLoading) => {
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     const account = ethers.utils.getAddress(accounts[0]);
     setAccount(account);
+
+    if (unity) {
+      const participant = await unity.customerMapping(account);
+      console.log("Fetched participant data:", participant); // Debugging line
+      setLoanAmountWei(ethers.utils.formatUnits(participant.loanAmountWei, 18)); // Assuming loanAmountWei is in wei
+    } else {
+      console.error("Unity contract is not set");
+    }
 
     setIsLoading(false);
   } catch (error) {

@@ -18,6 +18,7 @@ function App() {
 
   // State variables for contract data
   const [totalTokensLended, setTotalTokensLended] = useState(null);
+  const [loanAmountWei, setLoanAmountWei] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -38,9 +39,15 @@ function App() {
 
   useEffect(() => {
     if (isLoading && window.ethereum) {
-      loadUserData(setProvider, setAccount, setIsLoading);
+      loadUserData(setProvider, setAccount, setIsLoading, unity, setLoanAmountWei);
     }
   }, [isLoading]);
+
+  useEffect(() => {
+    if (unity && account) {
+      loadUserData(setProvider, setAccount, setIsLoading, unity, setLoanAmountWei);
+    }
+  }, [unity, account]);
 
   const footerOpacity = Math.min(scrollPosition / window.innerHeight, 1);
 
@@ -55,7 +62,7 @@ function App() {
               <UnityInfo totalTokensLended={totalTokensLended} />
             </div>
             <div className="flex-1 mt-4 h-full">
-              {account && <UserInfo account={account} />}
+              {account && <UserInfo account={account} loanAmountWei={loanAmountWei} />}
             </div>
           </div>
           <div className="w-full lg:w-1/2 p-4 h-full">

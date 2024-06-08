@@ -6,7 +6,7 @@ async function main() {
   console.log(`Deploying contracts with the account: ${deployer.address}`);
 
   // Deploy the UNITY contract
-  const UNITY = await hre.ethers.getContractFactory('UNITY');
+  const UNITY = await hre.ethers.getContractFactory('Unity');
   const unity = await UNITY.deploy();
   await unity.deployed();
   console.log(`UNITY contract deployed to: ${unity.address}`);
