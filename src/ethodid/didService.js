@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import { Resolver } from 'did-resolver';
 import { getResolver } from 'ethr-did-resolver';
-import { createVerifiableCredentialJwt, verifyCredential } from 'did-jwt-vc';
+import { createVerifiableCredentialJwt, verifyCredential, createVerifiablePresentationJwt, verifyPresentation } from 'did-jwt-vc';
 import { EthrDID } from 'ethr-did';
 
 // Infura project ID and Issuer private key
@@ -24,7 +24,7 @@ const didResolver = new Resolver(ethrDidResolver);
 // Create issuer object
 const issuerWallet = new ethers.Wallet(ISSUER_PRIVATE_KEY);
 const issuer = new EthrDID({
-  identifier: issuerWallet.address,  // Ensure no double 0x prefix
+  identifier: issuerWallet.address,
   privateKey: ISSUER_PRIVATE_KEY.replace(/^0x/, '')  // Ensure no double 0x prefix
 });
 
@@ -98,5 +98,40 @@ export const verifyVerifiableCredential = async (jwt) => {
   } catch (error) {
     console.error('Error verifying verifiable credential:', error);
     throw new Error('Error verifying verifiable credential');
+  }
+};
+
+export const createVerifiablePresentation = async (vcJwt) => {
+  try {
+    const vpPayload = {
+      vp: {
+        '@context': ['https://www.w3.org/2018/credentials/v1'],
+        type: ['VerifiablePresentation'],
+        verifiableCredential: [vcJwt]
+      }
+    };
+
+    const vpJwt = await createVerifiablePresentationJwt(vpPayload, {
+      did: issuerDid,
+      alg: 'ES256K-R',
+      signer: issuer.signer
+    });
+
+    console.log('VP JWT created:', vpJwt);
+    return vpJwt;
+  } catch (error) {
+    console.error('Error creating verifiable presentation:', error.message);
+    console.error('Error details:', error);
+    throw new Error('Error creating verifiable presentation');
+  }
+};
+
+export const verifyVerifiablePresentation = async (vpJwt) => {
+  try {
+    const verifiedPresentation = await verifyPresentation(vpJwt, didResolver);
+    return verifiedPresentation;
+  } catch (error) {
+    console.error('Error verifying verifiable presentation:', error);
+    throw new Error('Error verifying verifiable presentation');
   }
 };

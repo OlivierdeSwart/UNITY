@@ -14,7 +14,7 @@ import STAKING_ABI from '../abis/Staking.json';
 import config from '../config.json';
 
 // ethodid
-import { createDID, resolveDID, createVerifiableCredential, verifyVerifiableCredential } from '../ethodid/didService';
+import { createDID, resolveDID, createVerifiableCredential, verifyVerifiableCredential, createVerifiablePresentation, verifyVerifiablePresentation } from '../ethodid/didService';
 
 function App() {
   const [defaultProvider, setDefaultProvider] = useState(null);
@@ -44,6 +44,8 @@ function App() {
   const [did, setDid] = useState(null);
   const [vc, setVc] = useState(null);
   const [verifiedVc, setVerifiedVc] = useState(null);
+  const [vp, setVp] = useState(null);
+  const [verifiedVp, setVerifiedVp] = useState(null);
   
   const TARGET_NETWORK_ID = '31337'; // Hardhat network ID
 
@@ -266,6 +268,36 @@ function App() {
       alert('Error verifying verifiable credential');
     }
   };
+
+  const handleCreateVP = async () => {
+    try {
+      if (!vc) {
+        alert('No verifiable credential found. Create a verifiable credential first.');
+        return;
+      }
+      const vpJwt = await createVerifiablePresentation(vc);
+      setVp(vpJwt);
+      alert(`Verifiable Presentation Created: ${vpJwt}`);
+    } catch (error) {
+      console.error('Error creating verifiable presentation:', error.message);
+      alert('Error creating verifiable presentation');
+    }
+  };
+  
+  const handleVerifyVP = async () => {
+    try {
+      if (!vp) {
+        alert('No verifiable presentation found. Create a verifiable presentation first.');
+        return;
+      }
+      const verified = await verifyVerifiablePresentation(vp);
+      setVerifiedVp(verified);
+      alert(`Verifiable Presentation Verified: ${JSON.stringify(verified)}`);
+    } catch (error) {
+      console.error('Error verifying verifiable presentation:', error);
+      alert('Error verifying verifiable presentation');
+    }
+  };
   
   return (
     <Container>
@@ -347,10 +379,21 @@ function App() {
                   <Button onClick={handleVerifyVC} variant="secondary" className="mt-3">
                     Verify Verifiable Credential
                   </Button>
+                  <Button onClick={handleCreateVP} variant="primary" className="mt-3">
+                    Create Verifiable Presentation
+                  </Button>
                 </>
               )}
-              {verifiedVc && (
-                <p><strong>Verified Credential: </strong>{JSON.stringify(verifiedVc)}</p>
+              {vp && (
+                <>
+                  <p><strong>Verifiable Presentation JWT: </strong>{vp}</p>
+                  <Button onClick={handleVerifyVP} variant="secondary" className="mt-3">
+                    Verify Verifiable Presentation
+                  </Button>
+                </>
+              )}
+              {verifiedVp && (
+                <p><strong>Verified Presentation: </strong>{JSON.stringify(verifiedVp)}</p>
               )}
             </>
           )}
