@@ -244,7 +244,7 @@ function App() {
       setVc(jwt);
       alert(`Verifiable Credential Created: ${jwt}`);
     } catch (error) {
-      console.error('Error creating verifiable credential:', error);
+      console.error('Error creating verifiable credential:', error.message);
       alert('Error creating verifiable credential');
     }
   };
