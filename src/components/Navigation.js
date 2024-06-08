@@ -1,20 +1,27 @@
-import Navbar from 'react-bootstrap/Navbar';
-
+// src/components/Navigation.js
+import React from 'react';
 import logo from '../logo.png';
+import Button from './Button';
 
 const Navigation = () => {
     return (
-        <Navbar className='my-3'>
-            <img
-                alt="logo"
-                src={logo}
-                width="40"
-                height="40"
-                className="d-inline-block align-top mx-3"
-            />
-            <Navbar.Brand href="#">BinaryBit Staking</Navbar.Brand>
-        </Navbar>
+        <nav className="my-3 mx-4 p-4 flex items-center justify-between bg-gray-800 border border-gray-700 rounded-lg">
+            <div className="flex items-center">
+                <img
+                    alt="logo"
+                    src={logo}
+                    width="40"
+                    height="40"
+                    className="inline-block mx-3"
+                />
+                <a href="#" className="text-2xl font-bold text-white">BinaryBit Staking</a>
+            </div>
+            <div className="flex space-x-4">
+                <Button color="bg-blue-300" hoverColor="hover:bg-blue-700" text="Login" />
+                <Button color="bg-green-300" hoverColor="hover:bg-green-700" text="Signup" />
+            </div>
+        </nav>
     );
-}
+};
 
 export default Navigation;

@@ -53,8 +53,11 @@
     "@nomicfoundation/hardhat-toolbox": "2.0.2",
     "@nomiclabs/hardhat-ethers": "2.2.3",
     "@nomiclabs/hardhat-etherscan": "^3.1.8",
+    "autoprefixer": "^10.4.19",
     "chai": "4.3.6",
     "ethers": "5.5.4",
-    "hardhat": "^2.22.5"
+    "hardhat": "^2.22.5",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4"
   }
 }
