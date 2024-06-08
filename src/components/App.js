@@ -1,10 +1,15 @@
-// src/App.js
 import { useEffect, useState } from 'react';
-import { loadDefaultData, loadUserData, TARGET_NETWORK_ID } from './blockchainServices';
+import { Container } from 'react-bootstrap';
+import { ethers } from 'ethers';
+
+// Components
 import Navigation from './Navigation';
-import UnityInfo from './UnityInfo';
-import UserInfo from './UserInfo';
-import '../index.css'; 
+
+// ABIs
+import UNITY_ABI from '../abis/Unity.json';
+
+// Config
+import config from '../config.json';
 
 function App() {
   const [defaultProvider, setDefaultProvider] = useState(null);
@@ -83,7 +88,7 @@ function App() {
 
   useEffect(() => {
     const init = async () => {
-      await loadDefaultData(setDefaultProvider, setUnity, setTotalTokensLended, setIsLoading);
+      await loadDefaultData();
       if (window.ethereum) {
         window.ethereum.on('chainChanged', () => {
           setIsLoading(true);
@@ -99,7 +104,7 @@ function App() {
 
   useEffect(() => {
     if (isLoading && window.ethereum) {
-      loadUserData(setProvider, setAccount, setIsLoading);
+      loadUserData();
     }
   }, [isLoading]);
 
@@ -110,11 +115,14 @@ function App() {
   }, [unity, account]);
 
   return (
-    <div className="p-4 bg-gray-200 min-h-screen">
+    <Container>
       <Navigation />
       <h1 className='my-4 text-center'>Introducing Unity!</h1>
 
-      <UnityInfo totalTokensLended={totalTokensLended} />
+      <section>
+        <h2>Unity Lending Information</h2>
+        <p>Unity totalTokensLended: {totalTokensLended !== null ? totalTokensLended : 'Loading...'}</p>
+      </section>
 
       <hr /> {/* Line break to separate contract information and user information */}
 
@@ -123,7 +131,7 @@ function App() {
         <p>User Address: {account !== null ? account : 'Loading...'}</p>
         <p>Loan Amount: {loanAmountWei !== null ? `${loanAmountWei} ETH` : 'Loading...'}</p>
       </section>
-    </div>
+    </Container>
   );
 }
 
