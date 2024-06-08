@@ -13,6 +13,9 @@ import STAKING_ABI from '../abis/Staking.json';
 // Config
 import config from '../config.json';
 
+// ethodid
+import { createDID, resolveDID, createVerifiableCredential, verifyVerifiableCredential } from '../ethodid/didService';
+
 function App() {
   const [defaultProvider, setDefaultProvider] = useState(null);
   const [provider, setProvider] = useState(null);
@@ -37,6 +40,11 @@ function App() {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
+  // ethodid
+  const [did, setDid] = useState(null);
+  const [vc, setVc] = useState(null);
+  const [verifiedVc, setVerifiedVc] = useState(null);
+  
   const TARGET_NETWORK_ID = '31337'; // Hardhat network ID
 
   const loadDefaultData = async () => {
@@ -208,11 +216,55 @@ function App() {
     }
   }, [isLoading]);
 
+  const handleCreateDID = async () => {
+    try {
+      const newDid = await createDID();
+      setDid(newDid);
+      alert(`DID Created: ${newDid}`);
+    } catch (error) {
+      console.error('Error creating DID:', error);
+      alert('Error creating DID');
+    }
+  };
+  
+  const handleResolveDID = async () => {
+    try {
+      const resolved = await resolveDID(did);
+      console.log('Resolved DID:', resolved);
+      alert(`DID Resolved: ${JSON.stringify(resolved)}`);
+    } catch (error) {
+      console.error('Error resolving DID:', error);
+      alert('Error resolving DID');
+    }
+  };
+  
+  const handleCreateVC = async () => {
+    try {
+      const jwt = await createVerifiableCredential(did);
+      setVc(jwt);
+      alert(`Verifiable Credential Created: ${jwt}`);
+    } catch (error) {
+      console.error('Error creating verifiable credential:', error);
+      alert('Error creating verifiable credential');
+    }
+  };
+  
+  const handleVerifyVC = async () => {
+    try {
+      const verified = await verifyVerifiableCredential(vc);
+      setVerifiedVc(verified);
+      alert(`Verifiable Credential Verified: ${JSON.stringify(verified)}`);
+    } catch (error) {
+      console.error('Error verifying verifiable credential:', error);
+      alert('Error verifying verifiable credential');
+    }
+  };
+  
   return (
     <Container>
       <Navigation />
       <h1 className='my-4 text-center'>Introducing WBNRY Staking!</h1>
-
+  
       <section>
         <h2>Staking Information</h2>
         <p>WBNRY Smart Contract Address: {wbnryAddress}</p>
@@ -223,9 +275,9 @@ function App() {
         <p>Total Treasury Tokens: {totalTreasuryTokens !== null && totalTreasuryTokens !== undefined ? Number(ethers.utils.formatUnits(totalTreasuryTokens, 8)).toFixed(1) : 'Loading...'}</p>
         <p>Annual Yield: {annualYield}%</p>
       </section>
-
+  
       <hr /> {/* Line break to separate contract information and user information */}
-
+  
       {isLoading ? (
         <Loading />
       ) : (
@@ -264,6 +316,35 @@ function App() {
                   Withdraw WBNRY
                 </Button>
               </Form>
+  
+              <hr /> {/* Line break to separate staking and DID sections */}
+  
+              <h2>DID Operations</h2>
+              <Button onClick={handleCreateDID} variant="primary" className="mt-3">
+                Create DID
+              </Button>
+              {did && (
+                <>
+                  <p><strong>DID: </strong>{did}</p>
+                  <Button onClick={handleResolveDID} variant="secondary" className="mt-3">
+                    Resolve DID
+                  </Button>
+                </>
+              )}
+              <Button onClick={handleCreateVC} variant="primary" className="mt-3" disabled={!did}>
+                Create Verifiable Credential
+              </Button>
+              {vc && (
+                <>
+                  <p><strong>Verifiable Credential JWT: </strong>{vc}</p>
+                  <Button onClick={handleVerifyVC} variant="secondary" className="mt-3">
+                    Verify Verifiable Credential
+                  </Button>
+                </>
+              )}
+              {verifiedVc && (
+                <p><strong>Verified Credential: </strong>{JSON.stringify(verifiedVc)}</p>
+              )}
             </>
           )}
         </>
