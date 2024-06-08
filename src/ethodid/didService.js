@@ -2,13 +2,18 @@ import { ethers } from 'ethers';
 import { Resolver } from 'did-resolver';
 import { getResolver } from 'ethr-did-resolver';
 import { createVerifiableCredentialJwt, verifyCredential } from 'did-jwt-vc';
+import { EthrDID } from 'ethr-did';
+
+// Infura project ID and Issuer private key
+const INFURA_PROJECT_ID = '9c97e763f8f34f20bad5bbc3bc4eabb1';
+const ISSUER_PRIVATE_KEY = '0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a';
 
 // Configure DID resolver with Infura project ID
 const providerConfig = {
   networks: [
     {
-      name: "mainnet",
-      rpcUrl: "https://mainnet.infura.io/v3/9c97e763f8f34f20bad5bbc3bc4eabb1"
+      name: 'mainnet',
+      rpcUrl: `https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`
     }
   ]
 };
@@ -16,9 +21,23 @@ const providerConfig = {
 const ethrDidResolver = getResolver(providerConfig);
 const didResolver = new Resolver(ethrDidResolver);
 
+// Create issuer object
+const issuerWallet = new ethers.Wallet(ISSUER_PRIVATE_KEY);
+const issuer = new EthrDID({
+  identifier: issuerWallet.address,  // Ensure no double 0x prefix
+  privateKey: ISSUER_PRIVATE_KEY.replace(/^0x/, '')  // Ensure no double 0x prefix
+});
+
+// Create a provider and signer for the issuer
+const issuerProvider = new ethers.providers.JsonRpcProvider(`https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`);
+const issuerDid = `did:ethr:${issuerWallet.address}`;
+
 export const createDID = async () => {
   try {
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    if (!accounts || accounts.length === 0) {
+      throw new Error('No accounts available');
+    }
     const account = accounts[0];
     const did = `did:ethr:${account}`;
     return did;
@@ -38,27 +57,18 @@ export const resolveDID = async (did) => {
   }
 };
 
-export const createVerifiableCredential = async (did) => {
+export const createVerifiableCredential = async (holderDid) => {
   try {
     console.log('Starting to create verifiable credential');
 
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    console.log('Accounts obtained:', accounts);
-
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    console.log('Provider initialized');
-
-    const signer = provider.getSigner();
-    console.log('Signer obtained:', signer);
-
     const vcPayload = {
-      sub: did,
+      sub: holderDid,
       nbf: Math.floor(Date.now() / 1000),
       vc: {
         '@context': ['https://www.w3.org/2018/credentials/v1'],
         type: ['VerifiableCredential'],
         credentialSubject: {
-          id: did,
+          id: holderDid,
           name: 'Alice'
         }
       }
@@ -67,13 +77,9 @@ export const createVerifiableCredential = async (did) => {
     console.log('VC Payload created:', vcPayload);
 
     const jwt = await createVerifiableCredentialJwt(vcPayload, {
-      issuer: did,
-      signer: async (data) => {
-        console.log('Signing data:', data);
-        const signature = await signer.signMessage(data);
-        console.log('Data signed:', signature);
-        return signature;
-      }
+      did: issuerDid,
+      alg: 'ES256K-R',
+      signer: issuer.signer
     });
 
     console.log('JWT created:', jwt);
@@ -94,4 +100,3 @@ export const verifyVerifiableCredential = async (jwt) => {
     throw new Error('Error verifying verifiable credential');
   }
 };
-

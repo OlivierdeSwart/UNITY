@@ -13,6 +13,7 @@
     "did-jwt-vc": "^4.0.4",
     "did-resolver": "^4.1.0",
     "dotenv": "^16.0.0",
+    "ethr-did": "^3.0.21",
     "ethr-did-resolver": "^10.1.5",
     "lodash": "^4.17.21",
     "moment": "^2.29.1",

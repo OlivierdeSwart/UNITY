@@ -109,13 +109,12 @@ function App() {
       const account = ethers.utils.getAddress(accounts[0]);
       setAccount(account);
       
-      const participant = await Staking.getParticipant(account.address);
+      const participant = await Staking.getParticipant(account);
       const directStakeAmountSatoshi = participant.directStakeAmountSatoshi;
       setDirectStakeAmountSatoshi(directStakeAmountSatoshi);
 
       // Fetch account balance
       setAccountBalance(ethers.utils.formatUnits(await WBNRY.balanceOf(account), 8));
-
 
       setIsLoading(false);
     } catch (error) {
@@ -240,6 +239,10 @@ function App() {
   
   const handleCreateVC = async () => {
     try {
+      if (!did) {
+        alert('No DID found. Create a DID first.');
+        return;
+      }
       const jwt = await createVerifiableCredential(did);
       setVc(jwt);
       alert(`Verifiable Credential Created: ${jwt}`);
@@ -251,6 +254,10 @@ function App() {
   
   const handleVerifyVC = async () => {
     try {
+      if (!vc) {
+        alert('No verifiable credential found. Create a verifiable credential first.');
+        return;
+      }
       const verified = await verifyVerifiableCredential(vc);
       setVerifiedVc(verified);
       alert(`Verifiable Credential Verified: ${JSON.stringify(verified)}`);
@@ -354,3 +361,5 @@ function App() {
 }
 
 export default App;
+
+
