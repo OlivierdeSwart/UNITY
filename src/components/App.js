@@ -4,6 +4,7 @@ import { loadDefaultData, loadUserData, TARGET_NETWORK_ID } from './blockchainSe
 import Navigation from './Navigation';
 import UnityInfo from './UnityInfo';
 import UserInfo from './UserInfo';
+import HeroSection from './HeroSection';
 import '../index.css'; 
 
 function App() {
@@ -39,12 +40,14 @@ function App() {
   }, [isLoading]);
 
   return (
-    <div className="p-4 bg-gray-200 min-h-screen">
+    <div>
       <Navigation />
-
-      <UnityInfo totalTokensLended={totalTokensLended} />
-
-      {account && <UserInfo account={account} />}
+      <HeroSection />
+      <div id="content" className="pt-24 p-4 bg-gray-100 min-h-screen">
+        <UnityInfo totalTokensLended={totalTokensLended} />
+        <hr className="my-8" />
+        {account && <UserInfo account={account} />}
+      </div>
     </div>
   );
 }

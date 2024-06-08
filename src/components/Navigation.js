@@ -5,7 +5,7 @@ import Button from './Button';
 
 const Navigation = () => {
     return (
-        <nav className="my-3 mx-4 p-4 flex items-center justify-between bg-gray-800 border border-gray-700 rounded-lg">
+        <nav className="fixed top-0 left-0 right-0 p-4 flex items-center justify-between bg-gray-800 border-b border-gray-700 z-50">
             <div className="flex items-center">
                 <img
                     alt="logo"
@@ -17,8 +17,8 @@ const Navigation = () => {
                 <a href="#" className="text-2xl font-bold text-white">BinaryBit Staking</a>
             </div>
             <div className="flex space-x-4">
-                <Button color="bg-blue-300" hoverColor="hover:bg-blue-700" text="Login" />
-                <Button color="bg-green-300" hoverColor="hover:bg-green-700" text="Signup" />
+                <Button text="Login" />
+                <Button text="Signup" />
             </div>
         </nav>
     );
