@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Container, Form, Button } from 'react-bootstrap';
+import { Container, Form, Button, Alert } from 'react-bootstrap';
 import { ethers } from 'ethers';
 
 // Components
@@ -46,7 +46,8 @@ function App() {
   const [verifiedVc, setVerifiedVc] = useState(null);
   const [vp, setVp] = useState(null);
   const [verifiedVp, setVerifiedVp] = useState(null);
-  
+  const [verificationMessage, setVerificationMessage] = useState('');
+
   const TARGET_NETWORK_ID = '31337'; // Hardhat network ID
 
   const loadDefaultData = async () => {
@@ -110,7 +111,7 @@ function App() {
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       const account = ethers.utils.getAddress(accounts[0]);
       setAccount(account);
-      
+
       const participant = await Staking.getParticipant(account);
       const directStakeAmountSatoshi = participant.directStakeAmountSatoshi;
       setDirectStakeAmountSatoshi(directStakeAmountSatoshi);
@@ -227,7 +228,7 @@ function App() {
       alert('Error creating DID');
     }
   };
-  
+
   const handleResolveDID = async () => {
     try {
       const resolved = await resolveDID(did);
@@ -238,7 +239,7 @@ function App() {
       alert('Error resolving DID');
     }
   };
-  
+
   const handleCreateVC = async () => {
     try {
       if (!did) {
@@ -247,13 +248,14 @@ function App() {
       }
       const jwt = await createVerifiableCredential(did);
       setVc(jwt);
-      alert(`Verifiable Credential Created: ${jwt}`);
+      console.log('Verifiable Credential JWT:', jwt);
+      alert('Verifiable Credential Created');
     } catch (error) {
       console.error('Error creating verifiable credential:', error.message);
       alert('Error creating verifiable credential');
     }
   };
-  
+
   const handleVerifyVC = async () => {
     try {
       if (!vc) {
@@ -262,7 +264,8 @@ function App() {
       }
       const verified = await verifyVerifiableCredential(vc);
       setVerifiedVc(verified);
-      alert(`Verifiable Credential Verified: ${JSON.stringify(verified)}`);
+      console.log('Verified Credential:', verified);
+      alert('Verifiable Credential Verified');
     } catch (error) {
       console.error('Error verifying verifiable credential:', error);
       alert('Error verifying verifiable credential');
@@ -277,33 +280,35 @@ function App() {
       }
       const vpJwt = await createVerifiablePresentation(vc);
       setVp(vpJwt);
-      alert(`Verifiable Presentation Created: ${vpJwt}`);
+      console.log('Verifiable Presentation JWT:', vpJwt);
+      alert('Verifiable Presentation Created');
     } catch (error) {
-      console.error('Error creating verifiable presentation:', error.message);
+      console.error('Error creating verifiable presentation:', error);
       alert('Error creating verifiable presentation');
     }
   };
-  
+
   const handleVerifyVP = async () => {
     try {
       if (!vp) {
         alert('No verifiable presentation found. Create a verifiable presentation first.');
         return;
       }
-      const verified = await verifyVerifiablePresentation(vp);
-      setVerifiedVp(verified);
-      alert(`Verifiable Presentation Verified: ${JSON.stringify(verified)}`);
+      const verifiedPresentation = await verifyVerifiablePresentation(vp);
+      setVerifiedVp(verifiedPresentation);
+      console.log('Verified Presentation:', verifiedPresentation);
+      setVerificationMessage('Decentralized Identity Verified: All credentials and claims are trusted and authenticated!');
     } catch (error) {
       console.error('Error verifying verifiable presentation:', error);
       alert('Error verifying verifiable presentation');
     }
   };
-  
+
   return (
     <Container>
       <Navigation />
       <h1 className='my-4 text-center'>Introducing WBNRY Staking!</h1>
-  
+
       <section>
         <h2>Staking Information</h2>
         <p>WBNRY Smart Contract Address: {wbnryAddress}</p>
@@ -314,9 +319,9 @@ function App() {
         <p>Total Treasury Tokens: {totalTreasuryTokens !== null && totalTreasuryTokens !== undefined ? Number(ethers.utils.formatUnits(totalTreasuryTokens, 8)).toFixed(1) : 'Loading...'}</p>
         <p>Annual Yield: {annualYield}%</p>
       </section>
-  
+
       <hr /> {/* Line break to separate contract information and user information */}
-  
+
       {isLoading ? (
         <Loading />
       ) : (
@@ -355,9 +360,9 @@ function App() {
                   Withdraw WBNRY
                 </Button>
               </Form>
-  
+
               <hr /> {/* Line break to separate staking and DID sections */}
-  
+
               <h2>DID Operations</h2>
               <Button onClick={handleCreateDID} variant="primary" className="mt-3">
                 Create DID
@@ -375,7 +380,6 @@ function App() {
               </Button>
               {vc && (
                 <>
-                  <p><strong>Verifiable Credential JWT: </strong>{vc}</p>
                   <Button onClick={handleVerifyVC} variant="secondary" className="mt-3">
                     Verify Verifiable Credential
                   </Button>
@@ -386,14 +390,15 @@ function App() {
               )}
               {vp && (
                 <>
-                  <p><strong>Verifiable Presentation JWT: </strong>{vp}</p>
                   <Button onClick={handleVerifyVP} variant="secondary" className="mt-3">
                     Verify Verifiable Presentation
                   </Button>
                 </>
               )}
-              {verifiedVp && (
-                <p><strong>Verified Presentation: </strong>{JSON.stringify(verifiedVp)}</p>
+              {verificationMessage && (
+                <Alert variant="success" className="mt-3">
+                  {verificationMessage}
+                </Alert>
               )}
             </>
           )}
