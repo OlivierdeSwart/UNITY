@@ -18,7 +18,7 @@ const UserInfo = ({
       <p className="mt-4 text-lg text-gray-600">Connected Account: {account}</p>
       <p className="mt-4 text-lg text-gray-600">
         Loan Amount:{" "}
-        {loanAmountWei !== null ? `${loanAmountWei} ETH` : "Loading..."}
+        {loanAmountWei !== null ? `${loanAmountWei} XRP` : "Loading..."}
       </p>
       <hr></hr>
       <h2 mt-2 className="text-2xl font-semibold text-gray-800">

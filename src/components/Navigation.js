@@ -14,7 +14,7 @@ const Navigation = ({connectWallet, isButtonDisabled}) => {
           className="inline-block mx-3"
         />
         <a href="#" className="text-2xl font-bold text-white">
-          BinaryBit Staking
+          Unity
         </a>
       </div>
       <div className="flex space-x-4">
