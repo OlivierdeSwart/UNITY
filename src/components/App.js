@@ -1,6 +1,6 @@
 // src/App.js
 import { useEffect, useState } from 'react';
-import { loadDefaultData, loadUserData, TARGET_NETWORK_ID } from './blockchainServices';
+import { loadDefaultData, loadUserData, startNewLoan } from './blockchainServices';
 import Navigation from './Navigation';
 import UnityInfo from './UnityInfo';
 import UserInfo from './UserInfo';
@@ -49,6 +49,13 @@ function App() {
     }
   }, [unity, account]);
 
+  const handleStartNewLoan = async () => {
+    if (provider && unity) {
+      await startNewLoan(provider, unity);
+      await loadUserData(setProvider, setAccount, setIsLoading, unity, setLoanAmountWei); // Refresh user data
+    }
+  };
+
   const footerOpacity = Math.min(scrollPosition / window.innerHeight, 1);
 
   return (
@@ -62,7 +69,7 @@ function App() {
               <UnityInfo totalTokensLended={totalTokensLended} />
             </div>
             <div className="flex-1 mt-4 h-full">
-              {account && <UserInfo account={account} loanAmountWei={loanAmountWei} />}
+              {account && <UserInfo account={account} loanAmountWei={loanAmountWei} startNewLoan={handleStartNewLoan} />}
             </div>
           </div>
           <div className="w-full lg:w-1/2 p-4 h-full">

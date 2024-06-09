@@ -55,4 +55,17 @@ export const loadUserData = async (setProvider, setAccount, setIsLoading, unity,
     console.error("Error loading user data:", error);
     setIsLoading(false);
   }
+
+};
+
+export const startNewLoan = async (provider, unity) => {
+  try {
+    const signer = provider.getSigner();
+    const unityWithSigner = unity.connect(signer);
+    const tx = await unityWithSigner.startNewLoan();
+    await tx.wait();
+    console.log("Loan started successfully.");
+  } catch (error) {
+    console.error("Error starting new loan:", error);
+  }
 };
