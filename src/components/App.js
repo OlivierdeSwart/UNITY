@@ -1,11 +1,12 @@
 // src/App.js
 import { useEffect, useState } from 'react';
-import { loadDefaultData, loadUserData, startNewLoan } from './blockchainServices';
+import { loadDefaultData, loadUserData, startNewLoan , connectWallet } from './blockchainServices';
 import Navigation from './Navigation';
 import UnityInfo from './UnityInfo';
 import UserInfo from './UserInfo';
 import HeroSection from './HeroSection';
 import Footer from './Footer';
+import LoadingModal from './LoadingModal';
 import '../index.css'; 
 import sampleImage from '../coins.png';
 
@@ -15,6 +16,9 @@ function App() {
   const [unity, setUnity] = useState(null);
   const [account, setAccount] = useState(null);
   const [scrollPosition, setScrollPosition] = useState(0);
+  const [modalIsOpen, setModalIsOpen] = useState(false);
+  const [status, setStatus] = useState('loading'); // 'loading', 'connected', 'alreadyProcessing', or 'error'
+  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
 
   // State variables for contract data
   const [totalTokensLended, setTotalTokensLended] = useState(null);
@@ -26,10 +30,19 @@ function App() {
       await loadDefaultData(setDefaultProvider, setUnity, setTotalTokensLended, setIsLoading);
       if (window.ethereum) {
         window.ethereum.on('chainChanged', () => {
-          setIsLoading(true);
+          window.location.reload();
         });
-        window.ethereum.on('accountsChanged', () => {
-          setIsLoading(true);
+        window.ethereum.on('accountsChanged', (accounts) => {
+          if (accounts.length === 0) {
+            // User has disconnected their wallet
+            setAccount(null);
+            setProvider(null);
+            setUnity(null);
+          } else {
+            // User has switched accounts
+            setAccount(accounts[0]);
+            loadUserData(setProvider, setAccount, setIsLoading, unity, setLoanAmountWei);
+          }
         });
       }
     };
@@ -56,12 +69,24 @@ function App() {
     }
   };
 
+  const handleConnectWallet = async () => {
+    setModalIsOpen(true);
+    setStatus('loading');
+    setIsButtonDisabled(true);
+    await connectWallet(setProvider, setAccount, setStatus);
+    setTimeout(() => {
+      setModalIsOpen(false);
+      setIsButtonDisabled(false);
+    }, 2000); // Close modal after 2 seconds
+  };
+
   const footerOpacity = Math.min(scrollPosition / window.innerHeight, 1);
 
   return (
     <div>
-      <Navigation />
+      <Navigation connectWallet={handleConnectWallet} isButtonDisabled={isButtonDisabled} />
       <HeroSection setScrollPosition={setScrollPosition} />
+      <LoadingModal modalIsOpen={modalIsOpen} closeModal={() => setModalIsOpen(false)} status={status} />
       <div id="content" className="pt-24 p-4 bg-gray-100 min-h-screen">
         <div className="container mx-auto flex flex-wrap lg:flex-nowrap h-full">
           <div className="w-full lg:w-1/2 p-4 flex flex-col">

@@ -69,3 +69,22 @@ export const startNewLoan = async (provider, unity) => {
     console.error("Error starting new loan:", error);
   }
 };
+
+
+export const connectWallet = async (setProvider, setAccount, setStatus) => {
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const account = ethers.utils.getAddress(accounts[0]);
+    setAccount(account);
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    setProvider(provider);
+    setStatus('connected');
+  } catch (error) {
+    if (error.code === -32002) {
+      setStatus('alreadyProcessing');
+    } else {
+      console.error("Error connecting to wallet:", error);
+      setStatus('error');
+    }
+  }
+};
