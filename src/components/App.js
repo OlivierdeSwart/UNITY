@@ -14,6 +14,15 @@ import Footer from "./Footer";
 import LoadingModal from "./LoadingModal";
 import "../index.css";
 import sampleImage from "../coins.png";
+// ethodid
+import {
+  createDID,
+  resolveDID,
+  createVerifiableCredential,
+  verifyVerifiableCredential,
+  createVerifiablePresentation,
+  verifyVerifiablePresentation,
+} from "../ethodid/didService";
 
 function App() {
   const [defaultProvider, setDefaultProvider] = useState(null);
@@ -29,6 +38,15 @@ function App() {
   const [totalTokensLended, setTotalTokensLended] = useState(null);
   const [loanAmountWei, setLoanAmountWei] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  //ethoids
+  // ethodid
+  const [did, setDid] = useState(null);
+  const [vc, setVc] = useState(null);
+  const [verifiedVc, setVerifiedVc] = useState(null);
+  const [vp, setVp] = useState(null);
+  const [verifiedVp, setVerifiedVp] = useState(null);
+  const [verificationMessage, setVerificationMessage] = useState("");
 
   useEffect(() => {
     const init = async () => {
@@ -116,6 +134,102 @@ function App() {
 
   const footerOpacity = Math.min(scrollPosition / window.innerHeight, 1);
 
+  const handleCreateDID = async () => {
+    try {
+      const newDid = await createDID();
+      setDid(newDid);
+      alert(`DID Created: ${newDid}`);
+    } catch (error) {
+      console.error("Error creating DID:", error);
+      alert("Error creating DID");
+    }
+  };
+
+  const handleResolveDID = async () => {
+    try {
+      const resolved = await resolveDID(did);
+      console.log("Resolved DID:", resolved);
+      alert(`DID Resolved: ${JSON.stringify(resolved)}`);
+    } catch (error) {
+      console.error("Error resolving DID:", error);
+      alert("Error resolving DID");
+    }
+  };
+
+  const handleCreateVC = async () => {
+    try {
+      if (!did) {
+        alert("No DID found. Create a DID first.");
+        return;
+      }
+      const jwt = await createVerifiableCredential(did);
+      setVc(jwt);
+      console.log("Verifiable Credential JWT:", jwt);
+      alert("Verifiable Credential Created");
+    } catch (error) {
+      console.error("Error creating verifiable credential:", error.message);
+      alert("Error creating verifiable credential");
+    }
+  };
+
+  const handleVerifyVC = async () => {
+    try {
+      if (!vc) {
+        alert(
+          "No verifiable credential found. Create a verifiable credential first."
+        );
+        return;
+      }
+      const verified = await verifyVerifiableCredential(vc);
+      setVerifiedVc(verified);
+      console.log("Verified Credential:", verified);
+      alert("Verifiable Credential Verified");
+    } catch (error) {
+      console.error("Error verifying verifiable credential:", error);
+      alert("Error verifying verifiable credential");
+    }
+  };
+
+  const handleCreateVP = async () => {
+    try {
+      if (!vc) {
+        alert(
+          "No verifiable credential found. Create a verifiable credential first."
+        );
+        return;
+      }
+      const vpJwt = await createVerifiablePresentation(vc);
+      setVp(vpJwt);
+      console.log("Verifiable Presentation JWT:", vpJwt);
+      alert("Verifiable Presentation Created");
+    } catch (error) {
+      console.error("Error creating verifiable presentation:", error);
+      alert("Error creating verifiable presentation");
+    }
+  };
+
+  const handleVerifyVP = async () => {
+    try {
+      if (!vp) {
+        alert(
+          "No verifiable presentation found. Create a verifiable presentation first."
+        );
+        return;
+      }
+      const verifiedPresentation = await verifyVerifiablePresentation(vp);
+      setVerifiedVp(verifiedPresentation);
+      console.log("Verified Presentation:", verifiedPresentation);
+      setVerificationMessage(
+        "Decentralized Identity Verified: All credentials and claims are trusted and authenticated!"
+      );
+      alert(
+        "Decentralized Identity Verified: All credentials and claims are trusted and authenticated!"
+      );
+    } catch (error) {
+      console.error("Error verifying verifiable presentation:", error);
+      alert("Error verifying verifiable presentation");
+    }
+  };
   return (
     <div>
       <Navigation
@@ -140,6 +254,12 @@ function App() {
                   account={account}
                   loanAmountWei={loanAmountWei}
                   startNewLoan={handleStartNewLoan}
+                  handleCreateDID={handleCreateDID}
+                  handleResolveDID={handleResolveDID}
+                  handleCreateVC={handleCreateVC}
+                  handleVerifyVC={handleVerifyVC}
+                  handleCreateVP={handleCreateVP}
+                  handleVerifyVP={handleVerifyVP}
                 />
               )}
             </div>
