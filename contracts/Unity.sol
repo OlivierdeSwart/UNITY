@@ -43,7 +43,6 @@ contract Unity is ReentrancyGuard, Pausable, Ownable {
 
     receive() external payable {}
 
-    receive() external payable {}
 
 function startNewLoan() public whenNoCurrentLoanActive(msg.sender) nonReentrant {
     uint256 loanAmountWei = 10 * 10**18; // 10 ETH expressed in wei
