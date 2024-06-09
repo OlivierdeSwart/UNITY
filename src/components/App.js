@@ -19,6 +19,7 @@ function App() {
 
   // State variables for contract data
   const [totalTokensLended, setTotalTokensLended] = useState(null);
+  const [loanAmountWei, setLoanAmountWei] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const TARGET_NETWORK_ID = '31337'; // Hardhat network ID
@@ -69,6 +70,15 @@ function App() {
       const account = ethers.utils.getAddress(accounts[0]);
       setAccount(account);
 
+      // Fetch the loan amount for the user if unity contract is set
+      if (unity) {
+        const participant = await unity.customerMapping(account);
+        console.log("Fetched participant data:", participant); // Debugging line
+        setLoanAmountWei(ethers.utils.formatUnits(participant.loanAmountWei, 18)); // Assuming loanAmountWei is in wei
+      } else {
+        console.error("Unity contract is not set");
+      }
+
       setIsLoading(false);
     } catch (error) {
       console.error("Error loading user data:", error);
@@ -98,10 +108,16 @@ function App() {
     }
   }, [isLoading]);
 
+  useEffect(() => {
+    if (unity && account) {
+      loadUserData();
+    }
+  }, [unity, account]);
+
   return (
     <Container>
       <Navigation />
-      <h1 className='my-4 text-center'>Intoducing Unity!</h1>
+      <h1 className='my-4 text-center'>Introducing Unity!</h1>
 
       <section>
         <h2>Unity Lending Information</h2>
@@ -109,6 +125,12 @@ function App() {
       </section>
 
       <hr /> {/* Line break to separate contract information and user information */}
+
+      <section>
+        <h2>User Information</h2>
+        <p>User Address: {account !== null ? account : 'Loading...'}</p>
+        <p>Loan Amount: {loanAmountWei !== null ? `${loanAmountWei} ETH` : 'Loading...'}</p>
+      </section>
     </Container>
   );
 }
