@@ -40,34 +40,33 @@ contract Unity is ReentrancyGuard, Pausable, Ownable {
 
     receive() external payable {}
 
-    function startNewLoan(uint256 loanAmountWei) public whenNoCurrentLoanActive(msg.sender) nonReentrant {
-        require(loanAmountWei > 0, "Loan amount must be greater than 0");
+function startNewLoan() public whenNoCurrentLoanActive(msg.sender) nonReentrant {
+    uint256 loanAmountWei = 10 * 10**18; // 10 ETH expressed in wei
 
-        // Calculate the loan amount with interest (110%)
-        uint256 loanAmountWithInterestWei = loanAmountWei + (loanAmountWei / 10);
+    // Calculate the loan amount with interest (110%)
+    uint256 loanAmountWithInterestWei = loanAmountWei + (loanAmountWei / 10);
 
-        // Logic to start a new loan
-        Participant storage participant = customerMapping[msg.sender];
-        participant.loanStart = block.timestamp;
-        participant.loanAmountFlatWei = loanAmountWei;
-        participant.loanAmountWithInterestWei = loanAmountWithInterestWei;
-        participant.currentLoanActive = true;
-        
-        // Update global stats
-        totalTokensLended += loanAmountWei;
-        totalBorrowers += 1;
-        
-        // Add user to customer addresses array if not already present
-        if (participant.user == address(0)) {
-            participant.user = msg.sender;
-            customerAddressesArray.push(msg.sender);
-        }
-
-        // Transfer the loan amount to the borrower
-        (bool success, ) = msg.sender.call{value: loanAmountWei}("");
-        require(success, "Transfer failed.");
+    // Logic to start a new loan
+    Participant storage participant = customerMapping[msg.sender];
+    participant.loanStart = block.timestamp;
+    participant.loanAmountFlatWei = loanAmountWei;
+    participant.loanAmountWithInterestWei = loanAmountWithInterestWei;
+    participant.currentLoanActive = true;
+    
+    // Update global stats
+    totalTokensLended += loanAmountWei;
+    totalBorrowers += 1;
+    
+    // Add user to customer addresses array if not already present
+    if (participant.user == address(0)) {
+        participant.user = msg.sender;
+        customerAddressesArray.push(msg.sender);
     }
 
+    // Transfer the loan amount to the borrower
+    (bool success, ) = msg.sender.call{value: loanAmountWei}("");
+    require(success, "Transfer failed.");
+}
     function repayInstallment() public payable nonReentrant {
         Participant storage participant = customerMapping[msg.sender];
         require(participant.currentLoanActive, "No active loan to repay.");

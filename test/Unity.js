@@ -41,7 +41,7 @@ describe('UNITY', () => {
             await deployer.sendTransaction({ to: user1.address, value: eth(10) });
 
             const loanAmount = eth(10); // 10 ETH in wei
-            await unity.connect(user1).startNewLoan(loanAmount);
+            await unity.connect(user1).startNewLoan();
             const participant = await unity.customerMapping(user1.address);
             expect(participant.loanAmountFlatWei).to.equal(loanAmount);
             expect(participant.loanAmountWithInterestWei).to.equal(loanAmount.add(loanAmount.div(10))); // 110% of loanAmount
@@ -53,7 +53,7 @@ describe('UNITY', () => {
             await deployer.sendTransaction({ to: user1.address, value: eth(10) });
 
             const loanAmount = eth(10); // 10 ETH in wei
-            await unity.connect(user1).startNewLoan(loanAmount);
+            await unity.connect(user1).startNewLoan();
             expect(await unity.totalTokensLended()).to.equal(loanAmount);
             expect(await unity.totalBorrowers()).to.equal(1);
         });
@@ -63,8 +63,8 @@ describe('UNITY', () => {
             await deployer.sendTransaction({ to: user1.address, value: eth(10) });
 
             const loanAmount = eth(10); // 10 ETH in wei
-            await unity.connect(user1).startNewLoan(loanAmount);
-            await expect(unity.connect(user1).startNewLoan(loanAmount)).to.be.revertedWith('Current loan is active.');
+            await unity.connect(user1).startNewLoan();
+            await expect(unity.connect(user1).startNewLoan()).to.be.revertedWith('Current loan is active.');
         });
 
         it('Should transfer the loan amount to the user', async () => {
@@ -78,7 +78,7 @@ describe('UNITY', () => {
             console.log(`Initial contract balance: ${ethers.utils.formatEther(initialContractBalance)} ETH`);
 
             const loanAmount = eth(10); // 10 ETH in wei
-            const tx = await unity.connect(user1).startNewLoan(loanAmount);
+            const tx = await unity.connect(user1).startNewLoan();
             const receipt = await tx.wait();
 
             const gasUsed = receipt.gasUsed;
@@ -101,7 +101,7 @@ describe('UNITY', () => {
             await deployer.sendTransaction({ to: user1.address, value: eth(20) }); // Increased to cover gas fees
     
             const loanAmount = eth(10); // 10 ETH in wei
-            await unity.connect(user1).startNewLoan(loanAmount);
+            await unity.connect(user1).startNewLoan();
     
             const loanAmountWithInterest = loanAmount.add(loanAmount.div(10)); // 110% of the loan amount
             const installmentAmount = loanAmountWithInterest.div(10); // 10% of loanAmountWithInterest
@@ -123,12 +123,12 @@ describe('UNITY', () => {
             await deployer.sendTransaction({ to: user1.address, value: eth(20) }); // Increased to cover gas fees
     
             const loanAmount = eth(10); // 10 ETH in wei
-            await unity.connect(user1).startNewLoan(loanAmount);
+            await unity.connect(user1).startNewLoan();
     
             const loanAmountWithInterest = loanAmount.add(loanAmount.div(10)); // 110% of the loan amount
             const installmentAmount = loanAmountWithInterest.div(10); // 10% of loanAmountWithInterest
     
-            for (let i = 0; i < 10; i++) {
+            for (let I = 0; I < 10; I++) {
                 await unity.connect(user1).repayInstallment({ value: installmentAmount });
             }
     
@@ -138,52 +138,6 @@ describe('UNITY', () => {
             expect(participant.currentLoanActive).to.be.false;
         });
     });
+
     
-    describe('Repay Entire Loan', async () => {
-        // it('Should allow user to repay the entire loan', async () => {
-        //     // Ensure the user has sufficient balance
-        //     await deployer.sendTransaction({ to: user1.address, value: eth(20) }); // Increased to cover gas fees
-    
-        //     const loanAmount = eth(10); // 10 ETH in wei
-        //     await unity.connect(user1).startNewLoan(loanAmount);
-    
-        //     const loanAmountWithInterest = loanAmount.add(loanAmount.div(10)); // 110% of the loan amount
-    
-        //     const initialUserBalance = await ethers.provider.getBalance(user1.address);
-        //     await unity.connect(user1).repayEntireLoan({ value: loanAmountWithInterest });
-        //     const finalUserBalance = await ethers.provider.getBalance(user1.address);
-    
-        //     const participant = await unity.customerMapping(user1.address);
-        //     expect(participant.repaidAmountWei).to.equal(loanAmountWithInterest);
-        //     expect(participant.creditScore).to.equal(loanAmountWithInterest);
-        //     expect(participant.currentLoanActive).to.be.false;
-    
-        //     expect(initialUserBalance.sub(finalUserBalance)).to.be.closeTo(loanAmountWithInterest, ethers.utils.parseUnits('0.01', 'ether'));
-        // });
-    
-        // it('Should handle partial repayments before repaying entire loan', async () => {
-        //     // Ensure the user has sufficient balance
-        //     await deployer.sendTransaction({ to: user1.address, value: eth(20) }); // Increased to cover gas fees
-    
-        //     const loanAmount = eth(10); // 10 ETH in wei
-        //     await unity.connect(user1).startNewLoan(loanAmount);
-    
-        //     const loanAmountWithInterest = loanAmount.add(loanAmount.div(10)); // 110% of the loan amount
-        //     const installmentAmount = loanAmountWithInterest.div(10); // 10% of loanAmountWithInterest
-        //     await unity.connect(user1).repayInstallment({ value: installmentAmount });
-    
-        //     const remainingAmount = loanAmountWithInterest.sub(installmentAmount);
-    
-        //     const initialUserBalance = await ethers.provider.getBalance(user1.address);
-        //     await unity.connect(user1).repayEntireLoan({ value: remainingAmount });
-        //     const finalUserBalance = await ethers.provider.getBalance(user1.address);
-    
-        //     const participant = await unity.customerMapping(user1.address);
-        //     expect(participant.repaidAmountWei).to.equal(loanAmountWithInterest);
-        //     expect(participant.creditScore).to.equal(loanAmountWithInterest);
-        //     expect(participant.currentLoanActive).to.be.false;
-    
-        //     expect(initialUserBalance.sub(finalUserBalance)).to.be.closeTo(remainingAmount, ethers.utils.parseUnits('0.01', 'ether'));
-        // });
-    });
 });
