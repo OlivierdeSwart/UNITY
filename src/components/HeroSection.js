@@ -26,7 +26,7 @@ const HeroSection = ({setScrollPosition}) => {
     >
       <div className="text-center">
         <h1 className="text-5xl font-bold mb-4">Welcome to Unity</h1>
-        <p className="text-2xl">Your gateway to seamless and secure staking.</p>
+        <p className="text-2xl">Your gateway to seamless and secure borrowing.</p>
       </div>
       <div className="absolute bottom-4 cursor-pointer">
         <img src={downArrow} alt="Scroll Down" className="w-12 h-12" />
